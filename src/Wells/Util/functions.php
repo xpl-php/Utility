@@ -36,7 +36,7 @@ function sanitize_alnum( $str, array $extras = null ){
  */
 function pearclass( $str ){
 	$strWithSpaces = sanitize_alnum( trim(preg_replace('/[A-Z]/', ' $0', $str)) );
-	return str_replace(' ', '_', ucwords( $strWithSpaces ));
+	return str_replace(' ', '_', ucwords($strWithSpaces));
 }
 
 /**
@@ -61,10 +61,45 @@ function camelcase( $str ){
 }
 
 /**
-* Converts a comma-separated value string (e.g. "one, two, three, five") to array.
-*/
-function csv_to_array($csvStr){
-	return array_map( 'trim', explode( ',', $csvStr ) );
+ * Attempts to convert given value to a scalar value.
+ * 
+ * If $val is a file path, returns file contents using get_file_contents_clean().
+ * If $val is any other other scalar value, returns as-is.
+ * If $val is a callable, returns result if scalar.
+ * If $val is an object, tries to call __toString() and returns result if scalar.
+ * If none of the above worked, returns empty string.
+ */
+function scalarize( $val ){
+	
+	if ( is_scalar($val) ){
+		return is_file($val) ? @get_file_contents_clean($val) : $val;
+	}
+	
+	if ( is_callable($val) ){
+		$value = call_user_func($val);
+		return is_scalar($value) ? $value : '';
+	}
+	
+	if ( is_object($val) ){
+			
+		try {
+			$value = $val->__toString();
+		} catch(Exception $e){
+			$value = '';
+		}
+		
+		return $value;
+	}
+	
+	return '';
+}
+
+/**
+ * Converts a comma-separated value string to array.
+ * Trims whitespace from each array item.
+ */
+function csv_to_array( $csvStr ){
+	return array_map('trim', explode(',', $csvStr));
 }
 
 /**
@@ -99,32 +134,6 @@ function array_set( array &$array, $dotpath, $value ){
 		$loc =& $loc[ $step ];
 	
 	return $loc = $value;
-}
-
-/**
-* Parse an .ini file into an array, nesting with '.'
-*
-* @param string $file .ini file
-* @param bool $show_sections Show .ini sections
-* @return array Data
-*/
-function parse_ini_file_to_array( $file, $show_sections = false ){
-	
-	$config = array();
-	$data = parse_ini_file( $file, $show_sections );
-	
-	foreach ($data as $k => $v) {
-		
-		$ks = array_reverse( explode('.', $k) );
-		
-		foreach ($ks as $kss) {
-			$v = array($kss => $v);
-		}
-		
-		$config[] = $v;
-	}
-
-	return (0 === count($config)) ? array() : call_user_func_array('array_replace_recursive', $config);
 }
 
 /** ==============================
@@ -249,6 +258,28 @@ function dirs( $dir ){
 	}
 	
 	return $dirs;
+}
+
+/**
+ * Returns file contents string, using $vars as local variables.
+ * 
+ * Will execute PHP code in the file (uses include()).
+ * 
+ * @param string $__FILE__ Path to file
+ * @param array $vars Assoc. array of variables to import into file.
+ * @return string File contents.
+ */
+function get_file_contents_clean( $__FILE__, array $vars = array() ){
+	
+	ob_start();
+	
+	extract($vars, EXTR_REFS);
+
+	unset($vars);
+	
+	include $__FILE__;
+	
+	return ob_get_clean();
 }
 
 /**
