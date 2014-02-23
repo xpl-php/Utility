@@ -1,0 +1,23 @@
+{
+	"name": "phpf/util",
+	"type": "library",
+	"description": "Phpf Utility package",
+	"keywords": ["Utility", "Common", "Helper", "Registry", "Autoloader", "Dependency"],
+	"homepage": "https://github.com/phpf/Util",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "The PHPf Developer",
+			"email": "wellspeterson@live.com"
+		}
+	],
+	"require": {
+		"php": ">=5.3"
+	},
+	"autoload": {
+		"psr-0": {
+			"Phpf\\Util\\": "src/"
+		}
+	},
+	"minimum-stability": "dev"
+}
