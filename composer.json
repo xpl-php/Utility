@@ -12,7 +12,8 @@
 		}
 	],
 	"require": {
-		"php": ">=5.3"
+		"php": ">=5.3",
+		"phpf/service": "dev-master"
 	},
 	"autoload": {
 		"psr-0": {
