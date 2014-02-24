@@ -159,6 +159,20 @@ function str_rand( $length = 16, $pool_type = 'alnum' ){
 }
 
 /**
+ * Generates a verifiable token from seed.
+ */
+function generate_token( $seed, $algo = 'sha1' ){
+	return hash_hmac($algo, $seed, '1<Kjia6~?qxg*|!RLg<E!*TwB%yq)Fa77O:F))>%>Lp/vw-T1QF!Qm6rFWz1X3bQ');
+}
+
+/**
+ * Verifies a token using seed.
+ */
+function verify_token( $token, $seed, $algo = 'sha1' ){
+	return $token === generate_token($seed, $algo);
+}
+
+/**
  * Generate a UUID
  * 32 characters (a-f and 0-9) in format 8-4-4-12.
  */
@@ -171,20 +185,6 @@ function generate_uuid(){
  */
 function generate_crsf_token(){
     return base64_encode(str_rand(32));
-}
-
-/**
- * Generates a verifiable token from seed.
- */
-function generate_token( $seed, $algo = 'sha1' ){
-	return hash_hmac($algo, $seed, '1<Kjia6~?qxg*|!RLg<E!*TwB%yq)Fa77O:F))>%>Lp/vw-T1QF!Qm6rFWz1X3bQ');
-}
-
-/**
- * Verifies a token using seed.
- */
-function verify_token( $token, $seed, $algo = 'sha1' ){
-	return $token === generate_token($seed, $algo);
 }
 
 /**

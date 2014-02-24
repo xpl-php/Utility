@@ -32,6 +32,10 @@ class Finder {
 		return $this;
 	}
 	
+	public function getWorkingGroup(){
+		return isset($this->workingGroup) ? $this->workingGroup : null;
+	}
+	
 	public function resetWorkingGroup(){
 		unset($this->workingGroup);
 		return $this;
@@ -78,7 +82,12 @@ class Finder {
 		}
 		
 		if ( empty($ext) ){
-			$ext = $this->fileExtension;
+			if ( false !== $pos = strrpos($name, '.') ){
+				$ext = substr($name, $pos);
+				$name = str_replace('.'.$ext, '', $name);
+			} else {
+				$ext = $this->fileExtension;
+			}
 		} else {
 			$ext = ltrim($ext, '.');
 		}
@@ -89,9 +98,7 @@ class Finder {
 		
 		foreach( $this->dirs[$group] as $dir ){
 			
-			if ( !$this->isGlobbed($dir) ){
-				$this->globDir($dir);
-			}
+			$this->maybeGlobDir($dir);
 			
 			if ( $this->fileExists("$name.$ext", $dir) ){
 				return $this->files[$group]["$name.$ext"] = "$dir/$name.$ext";
@@ -101,6 +108,28 @@ class Finder {
 		return false;
 	}
 	
+	public function matchFiles( $shell_pattern = "*", $group = '' ){
+		
+		if (empty($group))
+			$group = $this->getGroup();
+		
+		$files = array();
+		
+		foreach( $this->dirs[$group] as $dir ){
+			
+			$this->maybeGlobDir($dir);
+			
+			foreach($this->getDirGlob($dir) as $item){
+				
+				if ( fnmatch($shell_pattern, $item) ){
+					$files[] = $item;
+				}
+			}
+		}
+		
+		return $files;
+	}
+	
 	protected function isGlobbed( $dir ){
 		return isset($this->globbed[$dir]);
 	}
@@ -108,6 +137,15 @@ class Finder {
 	protected function globDir( $dir ){
 		$this->globbed[ $dir ] = glob("$dir/*");
 		return $this;
+	}
+	
+	protected function maybeGlobDir( $dir ){
+		if ( !$this->isGlobbed($dir) )
+			$this->globDir($dir);
+	}
+	
+	protected function getDirGlob( $dir ){
+		return $this->globbed[$dir];
 	}
 	
 	protected function fileExists( $file, $dir ){
@@ -121,7 +159,5 @@ class Finder {
 			$group = $this->defaultGroup;
 		return $group;
 	}
-		
-	protected function __construct(){}
 	
 }
