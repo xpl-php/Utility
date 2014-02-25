@@ -19,6 +19,8 @@ class Callback {
 	
 	const INVOKABLE_OBJECT = 16;
 	
+	protected $callable;
+	
 	protected $reflection;
 	
 	protected $type;
@@ -28,6 +30,8 @@ class Callback {
 		if ( ! is_callable($callable) ){
 			throw new Exception("Uncallable function/method passed to Phpf\Reflection\Factory");
 		}
+		
+		$this->callable = $callable;
 		
 		if ( is_string($callable) ){
 			$this->reflection = new ReflectionFunction($callable);
@@ -74,7 +78,31 @@ class Callback {
 			}
 		}
 		
-		return $parameters;
+		return $this->reflectedParams = $parameters;
+	}
+	
+	public function invoke(){
+		
+		if ( !isset($this->reflectedParams) ){
+			throw new Exception("Call reflectParameters() before invoking");
+		}
+		
+		switch($this->type){
+	
+			case self::OBJECT_METHOD:
+				return $this->reflection->invokeArgs( $this->callable[0], $this->reflectedParams );
+			
+			case self::CLOSURE:
+			case self::FUNC:
+				return $this->reflection->invokeArgs($this->reflectedParams);
+			
+			case self::INVOKABLE_OBJECT:
+				return $this->reflection->invokeArgs( $this->callable, $this->reflectedParams );
+			
+			case self::STATIC_METHOD:
+				return call_user_func_array($this->callable, $this->reflectedParams);
+		}
+				
 	}
 	
 }

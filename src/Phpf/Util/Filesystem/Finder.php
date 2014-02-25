@@ -24,39 +24,7 @@ class Finder {
 		if ( !empty($default_group) )
 			$this->setDefaultGroup($default_group);
 		if ( !empty($file_extension) )
-			$this->setfileExtension($file_extension);
-	}
-	
-	public function setWorkingGroup( $group ){
-		$this->workingGroup = $group;
-		return $this;
-	}
-	
-	public function getWorkingGroup(){
-		return isset($this->workingGroup) ? $this->workingGroup : null;
-	}
-	
-	public function resetWorkingGroup(){
-		unset($this->workingGroup);
-		return $this;
-	}
-	
-	public function setDefaultGroup( $group ){
-		$this->defaultGroup = $group;
-		return $this;
-	}
-	
-	public function getDefaultGroup(){
-		return $this->defaultGroup;
-	}
-	
-	public function setfileExtension( $ext ){
-		$this->fileExtension = ltrim($ext, '.');
-		return $this;
-	}
-	
-	public function getfileExtension(){
-		return $this->fileExtension;
+			$this->setFileExtension($file_extension);
 	}
 	
 	public function registerDirectory( $path, $group = '' ){
@@ -96,12 +64,15 @@ class Finder {
 			return $this->files[$group]["$name.$ext"];
 		}
 		
-		foreach( $this->dirs[$group] as $dir ){
+		if ( !empty($this->dirs[$group]) ){
 			
-			$this->maybeGlobDir($dir);
-			
-			if ( $this->fileExists("$name.$ext", $dir) ){
-				return $this->files[$group]["$name.$ext"] = "$dir/$name.$ext";
+			foreach( $this->dirs[$group] as $dir ){
+				
+				$this->maybeGlobDir($dir);
+				
+				if ( $this->fileExists("$name.$ext", $dir) ){
+					return $this->files[$group]["$name.$ext"] = "$dir/$name.$ext";
+				}
 			}
 		}
 		
@@ -119,7 +90,7 @@ class Finder {
 			
 			$this->maybeGlobDir($dir);
 			
-			foreach($this->getDirGlob($dir) as $item){
+			foreach($this->getGlob($dir) as $item){
 				
 				if ( fnmatch($shell_pattern, $item) ){
 					$files[] = $item;
@@ -128,6 +99,38 @@ class Finder {
 		}
 		
 		return $files;
+	}
+	
+	public function setWorkingGroup( $group ){
+		$this->workingGroup = $group;
+		return $this;
+	}
+	
+	public function getWorkingGroup(){
+		return isset($this->workingGroup) ? $this->workingGroup : null;
+	}
+	
+	public function resetWorkingGroup(){
+		unset($this->workingGroup);
+		return $this;
+	}
+	
+	public function setDefaultGroup( $group ){
+		$this->defaultGroup = $group;
+		return $this;
+	}
+	
+	public function getDefaultGroup(){
+		return $this->defaultGroup;
+	}
+	
+	public function setFileExtension( $ext ){
+		$this->fileExtension = ltrim($ext, '.');
+		return $this;
+	}
+	
+	public function getFileExtension(){
+		return $this->fileExtension;
 	}
 	
 	protected function isGlobbed( $dir ){
@@ -144,7 +147,7 @@ class Finder {
 			$this->globDir($dir);
 	}
 	
-	protected function getDirGlob( $dir ){
+	protected function getGlob( $dir ){
 		return $this->globbed[$dir];
 	}
 	
@@ -153,11 +156,9 @@ class Finder {
 	}
 	
 	protected function getGroup(){
-		if ( isset($this->workingGroup) )
-			$group = $this->workingGroup;
-		else
-			$group = $this->defaultGroup;
-		return $group;
+		if ( !empty($this->workingGroup) )
+			return $this->workingGroup;
+		return $this->defaultGroup;
 	}
 	
 }
