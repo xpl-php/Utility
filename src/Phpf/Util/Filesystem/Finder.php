@@ -76,6 +76,8 @@ class Finder {
 			}
 		}
 		
+		var_dump( $group, $name, $ext );
+		
 		return false;
 	}
 	

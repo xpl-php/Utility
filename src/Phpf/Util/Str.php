@@ -81,7 +81,62 @@ class Str {
 		
 		return preg_replace($pattern, '', $str);
 	}
+		
+	/**
+	* Returns true if $haystack starts with $needle.
+	*/
+	public static function startsWith( $haystack, $needle ) {
+		return 0 === strpos($haystack, $needle);
+	}
 	
+	/**
+	* Returns true if $haystack ends $needle.
+	*/
+	public static function endsWith( $haystack, $needle ) {
+		return $needle === substr($haystack, -strlen($needle));
+	}
+	
+	/**
+	 * Returns true if $haystack contains $needle.
+	 */
+	public static function contains( $haystack, $needle ){
+		return false !== strpos($haystack, $needle);
+	}
+		
+	/** 
+	 * Returns 1st occurance of text between two strings. 
+	 * The "between" strings are not included in output.
+	 * @param string $source The string in which to search.
+	 * @param string $start The starting string
+	 * @param string $end The ending string
+	 * @return string Text between $start and $end. 
+	 */
+	public static function between( $source, $start, $end ){
+		$str1 = explode($start, $source);
+		$str2 = explode($end, $str1[1]);
+		return trim($str2[0]);
+	}
+	
+	/**
+	* Strips unescaped unicode characters (e.g. u00a0). 
+	* @uses mb_convert_encoding
+	*/
+	public static function stripInvalidUnicode( $str ){
+		return stripcslashes(preg_replace('/\\\\u([0-9a-f]{4})/i', '', mb_convert_encoding($str, 'UTF-8')));
+	}
+	
+	/**
+	 * Limit string to a given number of sentences.
+	 *
+	 * @param string $text The full string of sentences.
+	 * @param integer $count Number of sentences to return.
+	 * @return string Given number of sentences.
+	 */
+	public static function limitSentences( $text, $count ){
+		preg_match('/^([^.!?]*[\.!?]+){0,'. $count .'}/', strip_tags($text), $excerpt);
+		return $excerpt[0];
+	}
+
 	/**
 	 * Formats a string by injecting non-numeric characters into 
 	 * the string in the positions they appear in the template.
@@ -356,4 +411,61 @@ class Str {
 	public static function camelCase( $str ){
 		return lcfirst( self::studlyCaps($str) );
 	}
+	
+	/**
+	* Returns pretty-printed JSON string.
+	*/
+	public static function prettyJson( $json ){
+		$tab = " ";
+		$new_json = "";
+		$indent_level = 0;
+		$in_string = false;
+		$len = strlen($json);
+		for ( $c = 0; $c < $len; $c++ ){
+			$char = $json[$c];
+			switch ($char){
+				case '{':
+				case '[':
+					if ( !$in_string ){
+						$new_json .= $char . "\n" . str_repeat($tab, $indent_level+1);
+						$indent_level++;
+					} else {
+						$new_json .= $char;
+					}
+					break;
+				case '}':
+				case ']':
+					if ( !$in_string ) {
+						$indent_level--;
+						$new_json .= "\n" . str_repeat($tab, $indent_level) . $char;
+					} else {
+						$new_json .= $char;
+					}
+					break;
+				case ',':
+					if ( !$in_string ){
+						$new_json .= ",\n" . str_repeat($tab, $indent_level);
+					} else {
+						$new_json .= $char;
+					}
+					break;
+				case ':':
+					if ( !$in_string ){
+						$new_json .= ": ";
+					} else {
+						$new_json .= $char;
+					}
+					break;
+				case '"':
+					if ($c > 0 && $json[$c-1] != '\\'){
+						$in_string = !$in_string;
+					}
+				default:
+					$new_json .= $char;
+					break;                                        
+			}
+		}
+		return $new_json;	
+	}
+
 }

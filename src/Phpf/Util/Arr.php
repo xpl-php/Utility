@@ -147,5 +147,31 @@ class Arr {
 	
 		return $list;
 	}
+	
+	/**
+	* Implode an array into a list of items separated by $separator.
+	* Use $last_separator for the last list item.
+	*
+	* Useful for natural language lists (e.g first, second & third).
+	*
+	* Graciously stolen from humanmade hm-core: 
+	* @link https://github.com/humanmade/hm-core/blob/master/hm-core.functions.php
+	* 
+	* @param array $array
+	* @param string $separator. (default: ', ')
+	* @param string $last_separator. (default: ', and ')
+	* @return string a list of array values
+	*/		
+	function implodeNice( $array, $separator = ', ', $last_separator = ', and ' ) {
+		
+		if ( 1 === count($array) )
+			return reset($array);
+		
+		$end_value = array_pop($array);
+		
+		$list = implode($separator, $array);
+		
+		return $list . $last_separator . $end_value;
+	}
 		
 }
