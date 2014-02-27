@@ -42,19 +42,6 @@ class Path {
 	}
 	
 	/**
-	 * Returns URL schema, appending 's' if Http class is available 
-	 * and server is using SSL.
-	 */
-	public static function urlSchema( $schema = 'http' ){
-			
-		if ( class_exists('Phpf\Http\Http') ){
-			$schema .= \Phpf\Http\Http::isSsl() ? 's' : '';
-		}
-		
-		return $schema; 
-	}
-	
-	/**
 	 * Returns URL to given file or directory path.
 	 * If no path is given, attempts to return current URL.
 	 */
