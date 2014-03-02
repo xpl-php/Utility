@@ -8,7 +8,7 @@ class Path {
 	* Converts backslashes into forward slashes and strips trailing
 	*/
 	public static function normalize( $path ){
-		return rtrim(str_replace(array('/', '\\'), '/', $path), '/' );
+		return rtrim(str_replace('\\', '/', $path), '/');
 	}
 	
 	/**
@@ -22,15 +22,16 @@ class Path {
 	/**
 	 * Return a filename only if its a file.
 	 *  
-	 * Using pathinfo() with PATHINFO_FILENAME  flag will return the 
-	 * directory name if not a file (not what we want).
+	 * Using pathinfo() with PATHINFO_FILENAME  flag will return 
+	 * the directory name if not a file (not what we want).
 	 */
 	public static function filename( $path ){
 		return self::extension($path) ? pathinfo(rtrim($path, '/\\'), PATHINFO_FILENAME) : false;	
 	}
 	
 	/**
-	 * Returns server base url path from which to build URLs.
+	 * Returns base path with trailing slash from which URLs 
+	 * may be built, passive voice.
 	 */
 	public static function baseUrl( $server = null ){
 		
@@ -38,7 +39,7 @@ class Path {
 			$server =& $_SERVER;
 		}
 		
-		return dirname($server['HTTP_HOST'].$server['SCRIPT_NAME']) . '/';
+		return self::normalize(dirname($server['HTTP_HOST'].$server['SCRIPT_NAME']));
 	}
 	
 	/**
@@ -51,9 +52,10 @@ class Path {
 			$path = $_SERVER['REQUEST_URI'];
 		}
 		
+		// get rid of everything up to the path
 		$path = str_replace($_SERVER['DOCUMENT_ROOT'], '', self::normalize($path));
 		
-		$url = self::normalize(self::baseUrl());
+		$url = self::baseUrl();
 		
 		if ( $pos = strpos($path, $url) ){
 			$url = trim(substr($path, $pos), '/');
@@ -65,6 +67,7 @@ class Path {
 			return $url;
 		}
 		
+		// ugh, but no dependency
 		if ( class_exists('Phpf\Http\Http') ){
 			$protocol .= \Phpf\Http\Http::isSsl() ? 's' : '';
 		}

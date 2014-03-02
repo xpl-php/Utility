@@ -2,11 +2,6 @@
 
 namespace Phpf\Util\Reflection;
 
-use Exception;
-use ReflectionFunction;
-use ReflectionMethod;
-use Closure;
-
 class Callback {
 	
 	const FUNC = 1;
@@ -27,30 +22,30 @@ class Callback {
 	
 	public function __construct( $callable ){
 		
-		if ( ! is_callable($callable) ){
-			throw new Exception("Uncallable function/method passed to Phpf\Reflection\Factory");
+		if ( !is_callable($callable) ){
+			throw new Exception\Uncallable("Uncallable function/method passed to Phpf\Util\Reflection\Callback.");
 		}
 		
 		$this->callable = $callable;
 		
 		if ( is_string($callable) ){
-			$this->reflection = new ReflectionFunction($callable);
+			$this->reflection = new \ReflectionFunction($callable);
 			$this->type = self::FUNC;
 		} elseif ( is_array($callable) ){
-			$this->reflection = new ReflectionMethod($callable[0], $callable[1]);
+			$this->reflection = new \ReflectionMethod($callable[0], $callable[1]);
 			if ( is_object($callable[0]) ){
 				$this->type = self::OBJECT_METHOD;
 			} else {
 				$this->type = self::STATIC_METHOD;
 			}
-		} elseif ( $callable instanceof Closure ){
-			$this->reflection = new ReflectionFunction($callable);
+		} elseif ( $callable instanceof \Closure ){
+			$this->reflection = new \ReflectionFunction($callable);
 			$this->type = self::CLOSURE;
 		} elseif ( is_object($callable) && method_exists($callable, '__invoke') ){
-			$this->reflection = new ReflectionMethod($callable, '__invoke');
+			$this->reflection = new \ReflectionMethod($callable, '__invoke');
 			$this->type = self::INVOKABLE_OBJECT;
 		} else {
-			throw new Exception("Unknown callable type."); // this should never happen
+			throw new Exception\UnknownCallableType("Unknown callable type."); // this should never happen
 		}
 	}
 	
@@ -60,6 +55,10 @@ class Callback {
 		
 		foreach( $this->reflection->getParameters() as $_param )
 			$ordered[ $_param->getPosition() ] = $_param;
+		
+		if ( empty($ordered) ){
+			return $this->reflected_params = $parameters;
+		}
 		
 		ksort($ordered);
 		
@@ -74,33 +73,33 @@ class Callback {
 			} elseif ( $rParam->isDefaultValueAvailable() ){
 				$parameters[ $name ] = $rParam->getDefaultValue();
 			} else {
-				throw new Exception("Missing required parameter $name.");
+				throw new Exception\MissingParam($name); // just return param name
 			}
 		}
 		
-		return $this->reflectedParams = $parameters;
+		return $this->reflected_params = $parameters;
 	}
 	
 	public function invoke(){
 		
-		if ( !isset($this->reflectedParams) ){
-			throw new Exception("Call reflectParameters() before invoking");
+		if ( !isset($this->reflected_params) ){
+			throw new \RuntimeException("Call reflectParameters() before invoking");
 		}
 		
 		switch($this->type){
 	
 			case self::OBJECT_METHOD:
-				return $this->reflection->invokeArgs( $this->callable[0], $this->reflectedParams );
+				return $this->reflection->invokeArgs($this->callable[0], $this->reflected_params);
 			
 			case self::CLOSURE:
 			case self::FUNC:
-				return $this->reflection->invokeArgs($this->reflectedParams);
+				return $this->reflection->invokeArgs($this->reflected_params);
 			
 			case self::INVOKABLE_OBJECT:
-				return $this->reflection->invokeArgs( $this->callable, $this->reflectedParams );
+				return $this->reflection->invokeArgs($this->callable, $this->reflected_params);
 			
 			case self::STATIC_METHOD:
-				return call_user_func_array($this->callable, $this->reflectedParams);
+				return call_user_func_array($this->callable, $this->reflected_params);
 		}
 				
 	}
