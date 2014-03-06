@@ -17,14 +17,14 @@ use Phpf\Util\Arr;
 * Returns HTTP request headers as array.
 */
 function get_request_headers(){
-	return Http::getRequestHeaders();
+	return Http::requestHeaders();
 }
 	
 /**
 * Returns a single HTTP request header if set.
 */
 function get_request_header( $name ){
-	return Http::getRequestHeader($name);
+	return Http::requestHeader($name);
 }
 
 /** ======================
@@ -34,28 +34,28 @@ function get_request_header( $name ){
 /**
  * Converts a string to a PEAR-like class name. (e.g. "View_Template_Controller")
  */
-function pearclass( $str ){
+function str_pearclass( $str ){
 	return Str::pearClass($str);
 }
 
 /**
  * Converts a string to "snake_case"
  */
-function snakecase( $str ){
+function str_snakecase( $str ){
 	return Str::snakeCase($str);
 }
 
 /**
  * Converts a string to "StudlyCaps"
  */
-function studlycaps( $str ){
+function str_studlycaps( $str ){
 	return Str::studlyCaps($str);
 }
 
 /**
  * Converts a string to "camelCase"
  */
-function camelcase( $str ){
+function str_camelcase( $str ){
 	return Str::camelCase($str);
 }
 
@@ -67,7 +67,7 @@ function camelcase( $str ){
  * @param bool $encode Whether to encode or strip high & low ASCII chars. (default: false = strip)
  * @return string Sanitized string.
  */
-function esc_str( $string, $flag = Str::ESC_STRIP ){
+function str_esc( $string, $flag = Str::ESC_STRIP ){
 	return Str::esc($string, $flag);
 }
 
@@ -76,7 +76,7 @@ function esc_str( $string, $flag = Str::ESC_STRIP ){
  * Add characters to $extras to preserve those as well.
  * Extra chars should be escaped for use in preg_*() functions.
  */
-function esc_alnum( $str, array $extras = null ){
+function str_esc_alnum( $str, array $extras = null ){
 	return Str::escAlnum($str, $extras);
 }
 
@@ -86,21 +86,21 @@ function esc_alnum( $str, array $extras = null ){
  * @param string $text The text to be escaped.
  * @return string text, safe for inclusion in LIKE query.
  */
-function esc_sql_like( $string ) {
+function str_esc_sql_like( $string ) {
 	return Str::escSqlLike($string);
 }
 
 /**
  * Formats a phone number based on string lenth.
  */
-function format_phone( $phone ){
+function phone_format( $phone ){
 	return Str::formatPhone($phone);
 }
 
 /**
  * Formats a hash/digest based on string length.
  */
-function format_hash( $hash ){
+function hash_format( $hash ){
 	return Str::formatHash($hash);
 }
 
@@ -117,18 +117,6 @@ function str_format( $string, $template ){
 }
 
 /**
- * Generates a random string with given number of bytes.
- * If $strong = true (default), must use one of:
- * 		openssl_random_pseudo_bytes() PHP >= 5.3.4
- * 		mcrypt_create_iv() PHP >= 5.3.7
- * 		/dev/urandom
- * 		mt_rand()
- */
-function str_rand_bytes( $length = 12, $strong = true ){
-	return Str::randBytes($length, $strong);
-}
-
-/**
 * Generate a random string from one of several of character pools.
 *
 * @param int $length Length of the returned random string (default 16)
@@ -137,6 +125,48 @@ function str_rand_bytes( $length = 12, $strong = true ){
 */
 function str_rand( $length = 16, $pool_type = 'alnum' ){
 	return Str::rand($length, $pool_type);
+}
+
+/**
+ * Serialize data, if needed.
+ *
+ * @param mixed $data Data that might be serialized.
+ * @return mixed A scalar data
+ */
+function maybe_serialize( $data ) {
+	return Str::maybeSerialize($data);
+}
+
+/**
+ * Unserialize value only if it was serialized.
+ *
+ * @param string $value Maybe unserialized original, if is needed.
+ * @return mixed Unserialized data can be any type.
+ */
+function maybe_unserialize( $value ) {
+	return Str::maybeUnserialize($value);
+}
+
+/**
+ * Check value to find if it was serialized.
+ *
+ * @param mixed $data Value to check to see if was serialized.
+ * @param bool $strict Optional. Whether to be strict about the end of the string. Defaults true.
+ * @return bool False if not serialized and true if it was.
+ */
+function is_serialized( $data, $strict = true ) {
+	return Str::isSerialized($data, $strict);
+}
+
+/**
+ * Generates a random string with given number of bytes.
+ * If $strong = true (default), must use one of:
+ * 		openssl_random_pseudo_bytes() PHP >= 5.3.4
+ * 		mcrypt_create_iv() PHP >= 5.3.7
+ * 		/dev/urandom
+ */
+function rand_bytes( $length = 12, $strong = true ){
+	return Str::randBytes($length, $strong);
 }
 
 /**
@@ -164,7 +194,7 @@ function generate_uuid(){
 /**
  * Generates a 32-byte base64-encoded random string.
  */
-function generate_crsf_token(){
+function generate_csrf_token(){
     return Security::generateCsrfToken();
 }
 
@@ -188,9 +218,6 @@ function array_set( array &$array, $dotpath, $value ){
 
 /**
  * Merge user defined arguments into defaults array.
- *
- * This function is used throughout WordPress to allow for both string or array
- * to be merged into another array.
  *
  * @param string|array $args Value to merge with $defaults
  * @param array $defaults Array that serves as the defaults.

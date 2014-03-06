@@ -39,6 +39,22 @@ class Arr {
 	}
 	
 	/**
+	* Sets a value in $array given its path in dot notation.
+	*/
+	public static function dotUnset( array &$array, $dotpath ){
+		
+		if ( false === strpos( $dotpath, '.' ) )
+			return $array[ $dotpath ] = $value;
+		
+		$loc =& $array;
+		
+		foreach( explode('.', $dotpath) as $step )
+			$loc =& $loc[ $step ];
+		
+		unset($loc);
+	}
+	
+	/**
 	 * Merge user defined arguments into defaults array.
 	 *
 	 * @param string|array $args Value to merge with $defaults

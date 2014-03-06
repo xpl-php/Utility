@@ -3,21 +3,27 @@
 namespace Phpf\Util;
 
 class Str {
-		
+	
+	/**
+	 * Strip tags and low and high ASCII chars.
+	 */
+	const ESC_STRIP_ALL = 1;
+	
 	/**
 	 * Do nothing to ASCII chars.
 	 */
-	const ESC_NONE = 0;
-	
-	/**
-	 * Strip low and high ASCII chars.
-	 */
-	const ESC_STRIP = 1;
+	const ESC_ASCII_NONE = 2;
 	
 	/**
 	 * Encode low and high ASCII chars.
 	 */
-	const ESC_ENCODE = 2;
+	const ESC_ASCII_ENCODE = 4;
+	
+	/**
+	 * Strip low and high ASCII chars.
+	 */
+	const ESC_ASCII_STRIP = 8;
+	
 	
 	/**
 	 * Escape a string using fairly aggressive rules.
@@ -27,31 +33,23 @@ class Str {
 	 * @param bool $encode Whether to encode or strip high & low ASCII chars. (default: false = strip)
 	 * @return string Sanitized string.
 	 */
-	public static function esc( $string, $flag = self::ESC_STRIP ){
+	public static function esc( $string, $flags = self::ESC_STRIP_ALL ){
 		
-		$str = htmlentities( strip_tags($string), ENT_COMPAT, 'UTF-8' );
+		if ( $flags & self::ESC_STRIP_ALL ){
+			$string = htmlentities(strip_tags($string), ENT_COMPAT, 'UTF-8');
+		}
 		
-		preg_replace( '/[\x00-\x08\x0B-\x1F]/', '', $str );
+		preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
 		
-		$str = str_replace( array('javascript:', 'document.write'), '', $str );
-		
-		switch( $flag ){
-			
-			case self::ESC_STRIP:
-			default:
-				$flags = FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH;
-				break;
-			
-			case self::ESC_ENCODE:
-				$flags = FILTER_FLAG_ENCODE_LOW | FILTER_FLAG_ENCODE_HIGH;
-				break;
-			
-			case self::ESC_NONE:
-				$flags = FILTER_FLAG_NONE;
-				break;
+		if ( $flags & self::ESC_STRIP_ALL || $flags & self::ESC_ASCII_STRIP ){
+			$flags = FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH;
+		} elseif ( $flags & self::ESC_ASCII_ENCODE ){
+			$flags = FILTER_FLAG_ENCODE_LOW | FILTER_FLAG_ENCODE_HIGH;
+		} elseif ( $flags & self::ESC_ASCII_NONE ){
+			$flags = FILTER_FLAG_NONE;
 		}
 			
-		return filter_var($str, FILTER_SANITIZE_STRING, $flags);
+		return filter_var($string, FILTER_SANITIZE_STRING, $flags);
 	}
 			
 	/**
@@ -73,7 +71,7 @@ class Str {
 		
 		$pattern = '/[^a-zA-Z0-9 ';
 		
-		if ( ! empty($extras) ){
+		if ( !empty($extras) ){
 			$pattern .= implode('', $extras);
 		}
 		
@@ -226,7 +224,7 @@ class Str {
 	* @param string $type The type of characters to use to generate string.
 	* @return string A random string
 	*/
-	function rand( $length = 16, $pool_type = 'alnum' ){
+	public static function rand( $length = 16, $pool_type = 'alnum' ){
 		$str = '';
 		
 		switch ( $pool_type ) {
@@ -276,106 +274,107 @@ class Str {
 		
 		return $str;	
 	}
-		
-	/**
-	 * Generates a random string with given number of bytes.
-	 * If $strong = true (default), must use one of:
-	 * 		openssl_random_pseudo_bytes() PHP >= 5.3.4
-	 * 		mcrypt_create_iv() PHP >= 5.3.7
-	 * 		/dev/urandom
-	 * 		mt_rand()
-	 */
-	public static function randBytes( $length = 12, $strong = true ){
 	
-		if ( function_exists('openssl_random_pseudo_bytes') && version_compare(PHP_VERSION, '5.3.4') >= 0 ){
-	        $bytes = openssl_random_pseudo_bytes($length, $usable);
-			if (true === $usable) {
-	            return $bytes;
-	        }
-	    }
-		
-		if ( function_exists('mcrypt_create_iv') && version_compare(PHP_VERSION, '5.3.7') >= 0 ){
-	        $bytes = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
-			if ( $bytes !== false && $length === strlen($bytes) ) {
-	            return $bytes;
-	        }
-	    }
-		
-		$buffer = '';
-		$bl = strlen($buffer);
-	    
-		if ( @is_readable('/dev/urandom') ){
-		    $f = fopen('/dev/urandom', 'r');
-		    while ($bl < $length) {
-		        $buffer .= fread($f, $length - $bl);
-		        $bl = strlen($buffer);
-		    }
-		    fclose($f);
-		} else {
-			for ($i = 0; $i < $length; $i++) {
-				if ($i < $bl) {
-		            $buffer[$i] = $buffer[$i] ^ chr(mt_rand(0, 255));
-		        } else {
-		            $buffer .= chr(mt_rand(0, 255));
-		        }
-		    }
-		}
-		
-		if ( $length === strlen($buffer) ){
-			return $buffer;
-		} elseif ( true === $strong ){
-	        throw new \RuntimeException('Unable to generate sufficiently strong random bytes - no source with sufficient entropy.');
-	    }
-		
-		return self::randBytesWeak( $length );
+	/**
+	 * Serialize data, if needed.
+	 *
+	 * @param mixed $data Data that might be serialized.
+	 * @return mixed A scalar data
+	 */
+	public static function maybeSerialize( $data ) {
+		if ( is_array($data) || is_object($data) )
+			return serialize($data);
+		return $data;
 	}
 	
 	/**
-	 * A less secure fallback for randBytes()
+	 * Unserialize value only if it was serialized.
+	 *
+	 * @param string $value Maybe unserialized original, if is needed.
+	 * @return mixed Unserialized data can be any type.
 	 */
-	public static function randBytesWeak( $length ){
+	public static function maybeUnserialize( $value ) {
+		if ( self::isSerialized($value) )
+			return @unserialize($value);
+		return $value;
+	}
+	
+	/**
+	 * Check value to find if it was serialized.
+	 *
+	 * @param mixed $data Value to check to see if was serialized.
+	 * @param bool $strict Optional. Whether to be strict about the end of the string. Defaults true.
+	 * @return bool False if not serialized and true if it was.
+	 */
+	public static function isSerialized( $data, $strict = true ) {
+			
+		if ( ! is_string($data) )
+			return false;
 		
-		$result = '';
-	    $entropy = '';
-	    $msec_per_round = 100;
-	    $bits_per_round = 2;
-	    $total = $length;
-	    $bytes = 0;
-	    $hash_length = 20;
-	    $rounds = 0;
-	    while (strlen($result) < $length) {
-	        $bytes = ($total > $hash_length)? $hash_length : $total;
-	        $total -= $bytes;
-	        for ($i=1; $i < 3; $i++) {
-	            $t1 = microtime(true);
-	            $seed = mt_rand();
-	            for ($j=1; $j < 50; $j++) {
-	                $seed = sha1($seed);
-	            }
-	            $t2 = microtime(true);
-	            $entropy .= $t1 . $t2;
-	        }
-	        $divisor = (int) (($t2 - $t1) * 1000000);
-	        if ($divisor == 0) {
-	            $divisor = 400;
-	        }
-	        $rounds = (int) ($msec_per_round * 50 / $divisor);
-	        $iter = $bytes * (int) (ceil(8 / $bits_per_round));
-	        for ($i = 0; $i < $iter; $i ++)
-	        {
-	            $t1 = microtime();
-	            $seed = sha1(mt_rand());
-	            for ($j = 0; $j < $rounds; $j++)
-	            {
-	               $seed = sha1($seed);
-	            }
-	            $t2 = microtime();
-	            $entropy .= $t1 . $t2;
-	        }
-	        $result .= sha1($entropy, true);
+		$data = trim($data);
+	 	
+	 	if ( 'N;' == $data ) 
+	 		return true; // serialized null
+		
+		$length = strlen($data);
+		
+		if ( $length < 4 || ':' !== $data[1] )
+			return false; // no datatype char
+		
+		if ( $strict ) {
+			$lastc = $data[$length-1];
+			if ( ';' !== $lastc && '}' !== $lastc )
+				return false;
+		} else {
+			$semicolon = strpos($data, ';');
+			$brace     = strpos($data, '}');
+			// Either ; or } must exist, but neither 
+			// must be in the first X characters.
+			if ( (false === $semicolon && false === $brace)
+				|| (false !== $semicolon && $semicolon < 3)
+				|| (false !== $brace && $brace < 4) ) 
+			{
+				return false;
+			}
+		}
+		
+		$token = $data[0];
+		
+		switch ($token){
+			case 's' :
+				if ( ($strict && '"' !== $data[$length-2]) || false === strpos($data, '"') ){
+					return false;
+				}
+				// or else fall through
+			case 'a' :
+			case 'O' :
+				return (bool) preg_match( "/^{$token}:[0-9]+:/s", $data );
+			case 'b' :
+			case 'i' :
+			case 'd' :
+				$end = $strict ? '$' : '';
+				return (bool) preg_match( "/^{$token}:[0-9.E-]+;$end/", $data );
+		}
+		
+		return false;
+	}
+	
+	/**
+	 * Writes an array of data as CSV to a file.
+	 */
+	public static function writeCsv( array $data, $filepath ){
+	    
+	    if ( !is_writable($filepath) ){
+	    	throw new \InvalidArgumentException("File given is not writable - $filepath.");
 	    }
-
-	    return substr($result, 0, $length);
+		
+	    $output = fopen($filepath, "w");
+	    
+	    foreach ($data as $row) {
+	        fputcsv($output, $row);
+	    }
+	    
+	    fclose($output);
 	}
 		
 	/**

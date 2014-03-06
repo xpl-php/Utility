@@ -10,7 +10,7 @@ class Html {
 	 * @param string $attrStr HTML attribute string to parse
 	 * @return array Single or multi-dimensional assoc. array.
 	 */
-	function parseAttrs( $attrStr ){
+	public static function parseAttrs( $attrStr ){
 		
 		if ( ! is_string($attrStr) )
 			return $attrStr;
@@ -48,18 +48,31 @@ class Html {
 	}
 	
 	/**
+	 * Escapes an attribute value.
+	 * 
+	 * Note htmlentities() is applied with ENT_QUOTES in order to avoid 
+	 * XSS through single-quote injection. However, it does not prevent strings 
+	 * containing javascript within single quotes on certain attributes like 'href'.
+	 * Hence the strict option.
+	 */
+	public static function escAttr( $str, $strict = false ){
+		$str = htmlentities(Str::esc($str, Str::ESC_ASCII_STRIP), ENT_QUOTES);
+		return $strict ? str_replace(array('javascript:', 'document.write'), '', $str) : $str;
+	}
+	
+	/**
 	 * Returns an attribute name/value pair as a string.
 	 * 
-	 * @param string $attr The attribute name (e.g. 'class')
-	 * @param string|array $value The attr value. If array, delimited by spaces.
+	 * @param string $attr The attribute name.
+	 * @param string|array $value The attr value. If array, it is delimited by whitespace.
 	 * @return string The attribute string with a leading space.
 	 */
 	public static function attrStr( $attr, $value ){
-		if ( is_array( $value ) )
-			$value = implode( ' ', $value );
-		return ' ' . $attr . '="' . htmlspecialchars(Str::esc($value), ENT_COMPAT) . '"';
+		if ( is_array($value) )
+			$value = implode(' ', $value);
+		return ' ' . $attr . '="' . self::escAttr($value) . '"';
 	}
-		
+	
 	/**
 	 * Returns multiple attribute name/value pairs as a single string.
 	 * 
@@ -105,7 +118,7 @@ class Html {
 	 * @return string The closing HTML tag string.
 	 */
 	public static function tagClose( $tag ){
-		return '</' . $tag . '>';	
+		return '</' . $tag . ">\n";	
 	}
 
 	/**
@@ -117,7 +130,7 @@ class Html {
 	 * @return string The HTML tag wrapped around the given content.
 	 */
 	public static function tag( $tag, $attributes = array(), $content = '' ){
-		return self::tagOpen($tag, $attributes) . $content . '</' . $tag . '>';
+		return self::tagOpen($tag, $attributes) . $content . '</' . $tag . ">\n";
 	}
 	
 	/**
@@ -125,7 +138,7 @@ class Html {
 	 */
 	public static function script( $url, array $attrs = array() ){
 		$attrs = !empty($attrs) ? self::attrsStr($attrs) : '';
-		return '<script src="' . $url . '"' . $attrs . '></script>';
+		return '<script src="' . $url . '"' . $attrs . "></script>\n";
 	}
 	
 	/**
@@ -134,14 +147,14 @@ class Html {
 	public static function link( $url, array $attrs = array() ){
 		$default = array('rel' => 'stylesheet', 'type' => 'text/css');
 		$attrs = array_merge($default, $attrs);
-		return '<link href="' . $url . '"' . self::attrsStr($attrs) . '>';
+		return '<link href="' . $url . '"' . self::attrsStr($attrs) . ">\n";
 	}
 	
 	/**
 	 * Returns a <a> tag
 	 */
 	public static function a( $content, $href, array $attributes = array() ){
-		return '<a href="' . $href . '"' . self::attrsStr($attributes) . '>' . $content . '</a>';
+		return '<a href="' . $href . '"' . self::attrsStr($attributes) . '>' . $content . "</a>\n";
 	}
 	
 	/**
