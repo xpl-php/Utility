@@ -117,10 +117,17 @@ class Str {
 	
 	/**
 	* Strips unescaped unicode characters (e.g. u00a0). 
-	* @uses mb_convert_encoding
+	* @uses mb_detect_encoding, mb_convert_encoding
 	*/
 	public static function stripInvalidUnicode( $str ){
-		return stripcslashes(preg_replace('/\\\\u([0-9a-f]{4})/i', '', mb_convert_encoding($str, 'UTF-8')));
+		
+		$encoding = mb_detect_encoding($str);
+		
+		if ( 'UTF-8' !== $encoding || 'ASCII' !== $encoding ){
+			$str = mb_convert_encoding($str, 'UTF-8');
+		}
+		
+		return stripcslashes(preg_replace('/\\\\u([0-9a-f]{4})/i', '', $str));
 	}
 	
 	/**
@@ -149,11 +156,11 @@ class Str {
 		
 		while ( (strlen($template) - 1) >= $fpos ){
 			
-			if ( ctype_alnum( substr($template, $fpos, 1) ) ){
-				$result .= substr( $string, $spos, 1 );
+			if ( ctype_alnum(substr($template, $fpos, 1)) ){
+				$result .= substr($string, $spos, 1);
 				$spos++;
 			} else {
-				$result .= substr( $template, $fpos, 1 );
+				$result .= substr($template, $fpos, 1);
 			}
 			
 			$fpos++;

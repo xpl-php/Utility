@@ -9,6 +9,18 @@ use Phpf\Util\Str;
 use Phpf\Util\Security;
 use Phpf\Util\Arr;
 
+function session(){
+	return \Phpf\Util\Session::instance();
+}
+
+function session_set( $var, $val ){
+	return \Phpf\Util\Session::instance()->set($var, $val);
+}
+
+function session_get( $var = '' ){
+	return \Phpf\Util\Session::instance()->get($var);	
+}	
+
 /** ==============================
 		Request Headers
 =============================== */
