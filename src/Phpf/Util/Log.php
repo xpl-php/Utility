@@ -6,7 +6,7 @@
 
 namespace Phpf\Util;
 
-class FileLog extends Log {
+class FileLog implements iLogger {
 	
 	public $file;
 
@@ -46,12 +46,12 @@ class FileLog extends Log {
 
 }
 
-abstract class Log {
+interface iLogger {
 	
-	abstract public function error($message);
+	public function write($message, $severity);
 	
-	abstract public function log($message);
+	public function error($message);
 	
-	abstract public function info($message);
-
+	public function log($message);
+	
 }

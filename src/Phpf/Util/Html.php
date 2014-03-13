@@ -56,7 +56,7 @@ class Html {
 	 * Hence the strict option.
 	 */
 	public static function escAttr( $str, $strict = false ){
-		$str = htmlentities(Str::esc($str, Str::ESC_ASCII_STRIP), ENT_QUOTES);
+		$str = htmlentities(Str::esc($str, Str::ESC_ASCII), ENT_QUOTES);
 		return $strict ? str_replace(array('javascript:', 'document.write'), '', $str) : $str;
 	}
 	
@@ -136,25 +136,32 @@ class Html {
 	/**
 	 * Returns a <script> tag
 	 */
-	public static function script( $url, array $attrs = array() ){
-		$attrs = !empty($attrs) ? self::attrsStr($attrs) : '';
+	public static function script( $url, $attrs = array() ){
+		$attrs = !empty($attrs) ? self::parseAttrsToStr($attrs) : '';
 		return '<script src="' . $url . '"' . $attrs . "></script>\n";
 	}
 	
 	/**
 	 * Returns a <link> tag
 	 */
-	public static function link( $url, array $attrs = array() ){
+	public static function link( $url, $attrs = array() ){
+		
 		$default = array('rel' => 'stylesheet', 'type' => 'text/css');
-		$attrs = array_merge($default, $attrs);
+		
+		if ( !empty($attrs) ){
+			$attrs = array_merge($default, self::parseAttrs($attrs));
+		} else {
+			$attrs = $default;
+		}
+		
 		return '<link href="' . $url . '"' . self::attrsStr($attrs) . ">\n";
 	}
 	
 	/**
 	 * Returns a <a> tag
 	 */
-	public static function a( $content, $href, array $attributes = array() ){
-		return '<a href="' . $href . '"' . self::attrsStr($attributes) . '>' . $content . "</a>\n";
+	public static function a( $content, $href, $attributes = array() ){
+		return '<a href="' . $href . '"' . self::parseAttrsToStr($attributes) . '>' . $content . "</a>\n";
 	}
 	
 	/**

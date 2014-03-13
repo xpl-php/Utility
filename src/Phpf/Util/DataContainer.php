@@ -2,7 +2,7 @@
 
 namespace Phpf\Util;
 
-class DataContainer {
+class DataContainer implements \ArrayAccess, \Countable {
 	
 	protected $data = array();
 	
@@ -11,7 +11,7 @@ class DataContainer {
 	}
 	
 	public function __get($var){
-		return isset($this->data[$var]) ? $this->data[$var] : null;
+		return $this->data[$var];
 	}
 	
 	public function __isset($var){
@@ -52,6 +52,26 @@ class DataContainer {
 	
 	public function getData(){
 		return $this->data;
+	}
+	
+	public function offsetGet( $index ){
+		return $this->data[$index];
+	}
+	
+	public function offsetSet( $index, $newval ){
+		$this->data[$index] = $newval;
+	}
+	
+	public function offsetExists( $index ){
+		return isset($this->data[$index]);
+	}
+	
+	public function offsetUnset( $index ){
+		unset($this->data[$index]);
+	}
+	
+	public function count(){
+		return count($this->data);
 	}
 	
 }

@@ -5,51 +5,42 @@ namespace Phpf\Util;
 class Str {
 	
 	/**
-	 * Strip tags and low and high ASCII chars.
+	 * Use htmlentities() with ENT_COMPAT
 	 */
-	const ESC_STRIP_ALL = 1;
+	const ESC_HTML = 'html';
 	
 	/**
-	 * Do nothing to ASCII chars.
+	 * Strip ISO-8851-1 chars (above 128).
 	 */
-	const ESC_ASCII_NONE = 2;
+	const ESC_ASCII = 'ascii';
 	
 	/**
-	 * Encode low and high ASCII chars.
+	 * Allow all ISO-8851-1 chars.
 	 */
-	const ESC_ASCII_ENCODE = 4;
+	const ESC_ISO = 'iso';
 	
 	/**
-	 * Strip low and high ASCII chars.
-	 */
-	const ESC_ASCII_STRIP = 8;
-	
-	
-	/**
-	 * Escape a string using fairly aggressive rules.
-	 * Strips all tags and converts to html entities.
+	 * Escape a string using filter_var
 	 * 
 	 * @param string $string The string to sanitize.
-	 * @param bool $encode Whether to encode or strip high & low ASCII chars. (default: false = strip)
+	 * @param bool $flags Flags = strip non-ASCII chars
 	 * @return string Sanitized string.
 	 */
-	public static function esc( $string, $flags = self::ESC_STRIP_ALL ){
-		
-		if ( $flags & self::ESC_STRIP_ALL ){
-			$string = htmlentities(strip_tags($string), ENT_COMPAT, 'UTF-8');
-		}
+	public static function esc( $string, $flag = self::ESC_ASCII ){
 		
 		preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
 		
-		if ( $flags & self::ESC_STRIP_ALL || $flags & self::ESC_ASCII_STRIP ){
-			$flags = FILTER_FLAG_STRIP_LOW | FILTER_FLAG_STRIP_HIGH;
-		} elseif ( $flags & self::ESC_ASCII_ENCODE ){
-			$flags = FILTER_FLAG_ENCODE_LOW | FILTER_FLAG_ENCODE_HIGH;
-		} elseif ( $flags & self::ESC_ASCII_NONE ){
-			$flags = FILTER_FLAG_NONE;
+		if ( $flag == self::ESC_HTML ){
+			return htmlentities(strip_tags($string), ENT_QUOTES, false);
+		}
+		
+		if ( $flag == self::ESC_ASCII ){
+			$flag = FILTER_FLAG_STRIP_HIGH;
+		} elseif ( $flag == self::ESC_ISO ){
+			$flag = FILTER_FLAG_NONE;
 		}
 			
-		return filter_var($string, FILTER_SANITIZE_STRING, $flags);
+		return filter_var($string, FILTER_SANITIZE_STRING, $flag);
 	}
 			
 	/**
@@ -421,7 +412,7 @@ class Str {
 	/**
 	* Returns pretty-printed JSON string.
 	*/
-	public static function prettyJson( $json ){
+	public static function jsonPrettify( $json ){
 		$tab = " ";
 		$new_json = "";
 		$indent_level = 0;

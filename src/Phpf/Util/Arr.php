@@ -39,7 +39,7 @@ class Arr {
 	}
 	
 	/**
-	* Sets a value in $array given its path in dot notation.
+	* Unets a value in $array given its path in dot notation.
 	*/
 	public static function dotUnset( array &$array, $dotpath ){
 		

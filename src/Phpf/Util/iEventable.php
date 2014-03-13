@@ -4,8 +4,8 @@ namespace Phpf\Util;
 
 interface iEventable {
 	
-	public function on( $action, \Closure $callback );
+	public function on( $event, $callback );
 	
-	public function trigger( $action, array $args = array() );
+	public function trigger( $event );
 	
 }
