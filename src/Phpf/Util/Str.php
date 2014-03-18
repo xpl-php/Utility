@@ -91,6 +91,27 @@ class Str {
 	public static function contains( $haystack, $needle ){
 		return false !== strpos($haystack, $needle);
 	}
+	
+	/**
+	 * Returns substring of $haystack starting at end of $needle.
+	 */
+	public static function substrAfter($haystack, $needle) {
+			
+		if (false !== ($pos = strpos($haystack, $needle))) {
+			return substr($haystack, $pos+strlen($needle));
+		}
+		
+		return null;
+	}
+	
+	public static function substrBefore($haystack, $needle) {
+		
+		if (false !== ($pos = strpos($haystack, $needle))) {
+			return substr($haystack, 0, $pos);
+		}
+		
+		return null;
+	}
 		
 	/** 
 	 * Returns 1st occurance of text between two strings. 

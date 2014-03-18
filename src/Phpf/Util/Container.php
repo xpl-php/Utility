@@ -5,7 +5,7 @@ namespace Phpf\Util;
 use ArrayAccess;
 use Countable;
 
-class Container implements ArrayAccess, Countable {
+class Container implements ArrayAccess, Countable, iContainer {
 	
 	/**
 	 * Magic __set()
@@ -135,7 +135,7 @@ class Container implements ArrayAccess, Countable {
 	 */
 	private function magicOffsetGet($index){
 		
-		if (method_exists($this, '__offsetGet')){
+		if (method_exists($this, '__offsetGet')) {
 			return $this->__offsetGet($index);
 		}
 		

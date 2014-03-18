@@ -103,7 +103,7 @@ namespace {
 		
 		foreach( glob("$dir/*") as $item ) {
 			
-			if ( is_dir($item) && $level <= $levels ){
+			if (is_dir($item) && $level <= $levels) {
 				$level++;
 				glob_deep($item, $levels, $glob, $level);
 			} else {
@@ -204,17 +204,10 @@ namespace {
 	}
 	
 	/**
-	 * Formats a phone number based on string lenth.
+	 * Returns true if string ends with given $needle.
 	 */
-	function phone_format( $phone ){
-		return Str::formatPhone($phone);
-	}
-	
-	/**
-	 * Formats a hash/digest based on string length.
-	 */
-	function hash_format( $hash ){
-		return Str::formatHash($hash);
+	function str_endswith($haystack, $needle) {
+		return Str::endsWith($haystack, $needle);
 	}
 	
 	/**
@@ -238,6 +231,48 @@ namespace {
 	*/
 	function str_rand( $length = 16, $pool_type = 'alnum' ){
 		return Str::rand($length, $pool_type);
+	}
+	
+	/**
+	 * Converts a string to a PEAR-like class name. (e.g. "View_Template_Controller")
+	 */
+	function str_pearclass( $str ){
+		return Str::pearClass($str);
+	}
+	
+	/**
+	 * Converts a string to "snake_case"
+	 */
+	function str_snakecase( $str ){
+		return Str::snakeCase($str);
+	}
+	
+	/**
+	 * Converts a string to "StudlyCaps"
+	 */
+	function str_studlycaps( $str ){
+		return Str::studlyCaps($str);
+	}
+	
+	/**
+	 * Converts a string to "camelCase"
+	 */
+	function str_camelcase( $str ){
+		return Str::camelCase($str);
+	}
+	
+	/**
+	 * Formats a phone number based on string lenth.
+	 */
+	function phone_format( $phone ){
+		return Str::formatPhone($phone);
+	}
+	
+	/**
+	 * Formats a hash/digest based on string length.
+	 */
+	function hash_format( $hash ){
+		return Str::formatHash($hash);
 	}
 	
 	/**
@@ -269,34 +304,6 @@ namespace {
 	 */
 	function is_serialized( $data, $strict = true ) {
 		return Str::isSerialized($data, $strict);
-	}
-	
-	/**
-	 * Converts a string to a PEAR-like class name. (e.g. "View_Template_Controller")
-	 */
-	function str_pearclass( $str ){
-		return Str::pearClass($str);
-	}
-	
-	/**
-	 * Converts a string to "snake_case"
-	 */
-	function str_snakecase( $str ){
-		return Str::snakeCase($str);
-	}
-	
-	/**
-	 * Converts a string to "StudlyCaps"
-	 */
-	function str_studlycaps( $str ){
-		return Str::studlyCaps($str);
-	}
-	
-	/**
-	 * Converts a string to "camelCase"
-	 */
-	function str_camelcase( $str ){
-		return Str::camelCase($str);
 	}
 	
 	/** ====================

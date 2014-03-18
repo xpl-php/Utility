@@ -73,9 +73,7 @@ class Callback {
 			} elseif ( $rParam->isDefaultValueAvailable() ){
 				$parameters[ $name ] = $rParam->getDefaultValue();
 			} else {
-				$e = new Exception\MissingParam('Missing reflection parameter ' . $name);
-				$e->setMissingParam($name);
-				throw $e;
+				throw new Exception\MissingParam("Missing reflection parameter '$name'");
 			}
 		}
 		

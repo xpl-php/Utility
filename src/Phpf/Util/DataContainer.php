@@ -2,7 +2,7 @@
 
 namespace Phpf\Util;
 
-class DataContainer implements \ArrayAccess, \Countable {
+class DataContainer implements \ArrayAccess, \Countable, iContainer {
 	
 	protected $data = array();
 	
@@ -72,6 +72,29 @@ class DataContainer implements \ArrayAccess, \Countable {
 	
 	public function count(){
 		return count($this->data);
+	}
+	
+	/**
+	 * Imports an array or object containing data as properties.
+	 */
+	public function import( $data ){
+		
+		if (!is_array($data) && !$data instanceof \Traversable){
+			$data = (array) $data;
+		}
+		
+		foreach($data as $k => $v){
+			$this->data[$k] = $v;
+		}
+		
+		return $this;
+	}
+	
+	/**
+	 * Returns data array.
+	 */
+	public function toArray(){
+		return $this->data;
 	}
 	
 }
