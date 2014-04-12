@@ -46,7 +46,7 @@ class Path {
 	 * Returns URL to given file or directory path.
 	 * If no path is given, attempts to return current URL.
 	 */
-	public static function url( $path = '', $protocol = 'http' ){
+	public static function url($path = '', $protocol = 'http') {
 		
 		if ( empty($path) ){
 			$path = $_SERVER['REQUEST_URI'];
@@ -68,13 +68,13 @@ class Path {
 		}
 		
 		// ugh, but no dependency
-		if ( class_exists('Phpf\Http\Http') ){
+		if (class_exists('Phpf\Http\Http')) {
 			$protocol .= \Phpf\Http\Http::isSsl() ? 's' : '';
 		}
 		
 		$url = rtrim($protocol, ':/') . '://' . trim($url, '/');
 		
-		if ( false === self::extension($url) ){
+		if (false === self::extension($url)) {
 			$url .= '/';
 		}
 		
@@ -84,7 +84,7 @@ class Path {
 	/**
 	 * Base64 encode data safe for URLs.
 	 */
-	public static function safeBase64Encode( $data ){
+	public static function safeBase64Encode($data) {
 		
 		$b64 = base64_encode($data);
 	    
@@ -98,7 +98,7 @@ class Path {
 	/**
 	 * Decode a URL-safe base64-encoded string.
 	 */
-	public static function safeBase64Decode( $b64 ){
+	public static function safeBase64Decode($b64) {
 	    
 		$b64 = str_replace(
 	        array('-', '_'),

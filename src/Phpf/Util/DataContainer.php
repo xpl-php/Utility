@@ -2,98 +2,157 @@
 
 namespace Phpf\Util;
 
-class DataContainer implements \ArrayAccess, \Countable, iContainer {
-	
+class DataContainer extends Container
+{
+
 	protected $data = array();
 	
-	public function __set($var, $val){
+	/**
+	 * Magic __set()
+	 */
+	public function __set($var, $val) {
 		$this->data[$var] = $val;
 	}
 	
-	public function __get($var){
-		return $this->data[$var];
+	/**
+	 * Magic __get()
+	 */
+	public function __get($var) {
+		return isset($this->data[$var]) ? $this->result($this->data[$var]) : null;
 	}
-	
-	public function __isset($var){
+
+	/**
+	 * Magic __isset()
+	 */
+	public function __isset($var) {
 		return isset($this->data[$var]);
 	}
-	
-	public function __unset($var){
+
+	/**
+	 * Magic __unset()
+	 */
+	public function __unset($var) {
 		unset($this->data[$var]);
 	}
-	
-	public function set( $var, $val ){
-		$this->__set($var, $val);
+
+	/**
+	 * Gets a property value.
+	 * [iContainer]
+	 */
+	public function get($var) {
+		return isset($this->data[$var]) ? $this->result($this->data[$var]) : null;
+	}
+
+	/**
+	 * Sets a property value.
+	 * [iContainer]
+	 */
+	public function set($var, $val) {
+		$this->data[$var] = $val;
 		return $this;
 	}
-	
-	public function get( $var ){
-		return $this->__get($var);
+
+	/**
+	 * Returns true if a property exists.
+	 * [iContainer]
+	 */
+	public function exists($var) {
+		return isset($this->data[$var]);
 	}
-	
-	public function exists($var){
-		return $this->__isset($var);
-	}
-	
-	public function remove($var){
-		$this->__unset($var);
+
+	/**
+	 * Unsets a property.
+	 * [iContainer]
+	 */
+	public function remove($var) {
+		unset($this->data[$var]);
 		return $this;
 	}
-	
-	public function setData( array $data ){
-		$this->data = $data;
-		return $this;
+
+	/**
+	 * Gets a property value.
+	 * [ArrayAccess]
+	 */
+	public function offsetGet($index) {
+		return isset($this->data[$index]) ? $this->result($this->data[$index]) : null;
 	}
-	
-	public function addData( array $data ){
-		$this->data = array_merge($this->data, $data);
-		return $this;
-	}
-	
-	public function getData(){
-		return $this->data;
-	}
-	
-	public function offsetGet( $index ){
-		return $this->data[$index];
-	}
-	
-	public function offsetSet( $index, $newval ){
+
+	/**
+	 * Sets a property value.
+	 * [ArrayAccess]
+	 */
+	public function offsetSet($index, $newval) {
 		$this->data[$index] = $newval;
 	}
-	
-	public function offsetExists( $index ){
+
+	/**
+	 * Returns true if a property exists.
+	 * [ArrayAccess]
+	 */
+	public function offsetExists($index) {
 		return isset($this->data[$index]);
 	}
-	
-	public function offsetUnset( $index ){
+
+	/**
+	 * Unsets a property.
+	 * [ArrayAccess]
+	 */
+	public function offsetUnset($index) {
 		unset($this->data[$index]);
 	}
-	
-	public function count(){
+
+	/**
+	 * Returns number of data items.
+	 * [Countable]
+	 */
+	public function count() {
 		return count($this->data);
 	}
 	
 	/**
-	 * Imports an array or object containing data as properties.
+	 * Returns iterator.
+	 * [IteratorAggregate]
 	 */
-	public function import( $data ){
-		
-		if (!is_array($data) && !$data instanceof \Traversable){
-			$data = (array) $data;
-		}
-		
-		foreach($data as $k => $v){
-			$this->data[$k] = $v;
-		}
-		
+	public function getIterator() {
+		return new \ArrayIterator($this->data);
+	}
+
+	/**
+	 * Returns data array.
+	 * [iContainer]
+	 */
+	public function toArray() {
+		return $this->data;
+	}
+	
+	/**
+	 * Returns raw value without executing closures.
+	 */
+	public function getRaw($var) {
+		return isset($this->data[$var]) ? $this->data[$var] : null;
+	}
+	
+	/**
+	 * Sets data array, replacing existing array.
+	 */
+	public function setData(array $data) {
+		$this->data = $data;
 		return $this;
 	}
 	
 	/**
-	 * Returns data array.
+	 * Adds array of to existing array.
 	 */
-	public function toArray(){
+	public function addData(array $data) {
+		$this->data = array_merge($this->data, $data);
+		return $this;
+	}
+	
+	/**
+	 * Returns the array of data.
+	 * Identical to toArray()
+	 */
+	public function getData() {
 		return $this->data;
 	}
 	

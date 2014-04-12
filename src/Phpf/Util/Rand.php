@@ -2,26 +2,145 @@
 
 namespace Phpf\Util;
 
-class Security
-{
-
+class Rand {
+	
+	const ALPHA = 1;
+	const NUM = 2;
+	const PUNCT = 4;
+	const WHITESPACE = 8;
+	const ALNUM = 13305;
+	const SALT = 13307;
+	const HEX = 13309;
+	const NONZERO = 13311;
+	const DISTINCT = 13313;
+	
+	const CHARS_ALPHA = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+	const CHARS_NUM = '0123456789';
+	const CHARS_PUNCT = '~!@#$%^&*()_+=-{}[]\'";:><,./?';
+	const CHARS_WHITESPACE = ' ';
+	const CHARS_HEX = '0123456789abcdef';
+	const CHARS_NONZERO = '123456789';
+	const CHARS_DISTINCT = '2345679ACDEFHJKLMNPRSTUVWXYZ';
+	
+	public static function getChars($val) {
+			
+		if (is_int($val)) {
+			
+			// presets
+			if ($val > 13304) {
+				switch($val) {
+					case 13305:
+						return static::CHARS_ALPHA.static::CHARS_NUM;
+					case 13307:
+						return static::CHARS_ALPHA.static::CHARS_NUM.static::CHARS_WHITESPACE.static::CHARS_PUNCT;
+					case 13309:
+						return static::CHARS_HEX;
+					case 13311:
+						return static::CHARS_NONZERO;
+					case 13313:
+						return static::CHARS_DISTINCT;
+					default:
+						trigger_error("Unknown char list ID '$val'.");
+						return null;
+				}
+			}
+			
+			$chars = '';
+			
+			if (static::ALPHA & $val) {
+				$chars .= static::ALPHA;
+			}
+			if (static::NUM & $val) {
+				$chars .= static::NUM;
+			}
+			if (static::PUNCT & $val) {
+				$chars .= static::CHARS_PUNCT;
+			}
+			if (static::WHITESPACE & $val) {
+				$chars .= static::CHARS_WHITESPACE;
+			}
+			
+			return $chars;
+		} 
+		
+		switch ($val) {
+			case 'alnum':
+			default:
+				return static::CHARS_ALPHA.static::CHARS_NUM;
+			case 'salt':
+				return static::CHARS_ALPHA.static::CHARS_NUM.static::CHARS_WHITESPACE.static::CHARS_PUNCT;
+			case 'numeric':
+			case 'num':
+				return static::CHARS_NUM;
+			case 'alpha':
+				return static::CHARS_ALPHA;
+			case 'hex':
+			case 'hexdec':
+				return static::CHARS_HEX;
+			case 'nonzero':
+				return static::CHARS_NONZERO;
+			case 'distinct':
+				return static::CHARS_DISTINCT;
+			case 'punct':
+			case 'punc':
+				return static::CHARS_PUNCT;
+			case 'complex': // all but whitespace
+				return static::CHARS_ALPHA.static::CHARS_NUM.static::CHARS_PUNCT;
+		}
+	}
+	
 	/**
-	 * Generate a v4 UUID.
-	 * That is, a random string of 32 hexadecimal characters (a-f and 0-9)
-	 * formatted with dashes at certain positions (8-4-4-4-12).
-	 */
-	public static function generateUuid() {
-		$bytes = static::randBytes(16, false);
-		return Str::formatHash(bin2hex($bytes));
+	* Generate a random string from one of several of character pools.
+	*
+	* @param int $length Length of the returned random string (default 16)
+	* @param string $type The type of characters to use to generate string.
+	* @return string A random string
+	*/
+	public static function str($length = 16, $type = self::ALNUM) {
+		return static::fromCharlist($length, static::getChars($type));
 	}
 
-	/**
-	 * Generates a 32-char base64-encoded random string.
-	 */
-	public static function generateCsrfToken() {
-		return base64_encode(static::generateUuid());
+	public static function alpha($length) {
+		return static::fromCharlist($length, static::CHARS_ALPHA);
 	}
 
+	public static function num($length) {
+		return static::fromCharlist($length, static::CHARS_NUM);
+	}
+	
+	public static function hex($length) {
+		return static::fromCharlist($length, static::CHARS_HEX);
+	}
+	
+	public static function punct($length) {
+		return static::fromCharlist($length, static::CHARS_PUNCT);
+	}
+	
+	public static function salt($length) {
+		return static::fromCharlist($length, static::getChars(static::SALT));
+	}
+	
+	public static function alnum($length) {
+		return static::fromCharlist($length, static::getChars(static::ALNUM));
+	}
+	
+	/**
+	 * Generates a random string of given length out of a given character list string.
+	 * 
+	 * @param int $length Length of string to generate.
+	 * @param string $charlist Characters to use in the generation of the string.
+	 * @return string Random string of length $length using charlist.
+	 */
+	public static function fromCharlist($length, $charlist) {
+		$num = strlen($charlist);
+		$str = ''; $strlen = 0;
+		while ( $strlen < $length) {
+			$str .= substr($charlist, mt_rand(0, $num), 1);
+			$strlen = strlen($str);
+		}
+		return $str;
+	}
+	
 	/**
 	 * Generates a random string with given number of bytes.
 	 * If $strong = true (default), must use one of:
@@ -29,7 +148,7 @@ class Security
 	 * 		mcrypt_create_iv() if PHP >= 5.3.7
 	 * 		/dev/urandom
 	 */
-	public static function randBytes($length = 12, $strong = true) {
+	public static function bytes($length = 12, $strong = true) {
 
 		if (function_exists('openssl_random_pseudo_bytes') 
 			&& version_compare(PHP_VERSION, '5.3.4') >= 0 
@@ -145,5 +264,5 @@ class Security
 
 		return substr($result, 0, $length);
 	}
-
+	
 }

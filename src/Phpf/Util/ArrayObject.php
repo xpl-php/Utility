@@ -4,13 +4,21 @@ namespace Phpf\Util;
 
 use ArrayAccess;
 use Countable;
+use IteratorAggregate;
 
-class ArrayObject implements ArrayAccess, Countable {
+class ArrayObject implements ArrayAccess, Countable, IteratorAggregate {
+	
+	public function __construct($data = null) {
+		
+		if (isset($data)){
+			$this->import($data);
+		}
+	}
 	
 	public function filter( \Closure $call ){
 		$return = array();
-		foreach($this->asArray() as $k => $v) {
-			if ( 1 <= $call($k, $v) ){
+		foreach($this as $k => $v) {
+			if (1 <= $call($k, $v)) {
 				$return[$k] = $v;
 			}
 		}
@@ -21,6 +29,7 @@ class ArrayObject implements ArrayAccess, Countable {
 		foreach(func_get_args() as $item){
 			$this[] = $item;
 		}
+		return $this;
 	}
 	
 	public function import($data) {
@@ -30,6 +39,13 @@ class ArrayObject implements ArrayAccess, Countable {
 		foreach($data as $k => $v){
 			$this->$k = $v;
 		}
+	}
+	
+	public function ksort() {
+		$arr = $this->asArray();
+		$sort = ksort($arr);
+		$this->import($sort);
+		return $this;
 	}
 	
 	public function merge(array $arr) {
@@ -68,7 +84,7 @@ class ArrayObject implements ArrayAccess, Countable {
 	 * Returns a property value [ArrayAccess].
 	 */
 	public function offsetGet( $index ){
-		return isset($this->$index) ? $this->$index : $this->magicOffsetGet($index);
+		return isset($this->$index) ? $this->$index : null;
 	}
 	
 	/**
@@ -104,4 +120,10 @@ class ArrayObject implements ArrayAccess, Countable {
 		return count($this);
 	}
 	
+	/**
+	 * Returns ArrayIterator [IteratorAggregate].
+	 */
+	public function getIterator() {
+		return new \ArrayIterator($this);
+	}
 }
