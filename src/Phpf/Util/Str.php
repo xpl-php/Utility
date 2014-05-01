@@ -47,6 +47,24 @@ class Str {
 		
 		return filter_var($string, FILTER_SANITIZE_STRING, $flag);
 	}
+		
+	/**
+	 * Strips non-alphanumeric characters from a string.
+	 * 
+	 * Add characters to $extras to preserve those as well.
+	 * Extra chars should be escaped for use in preg_*() functions.
+	 * 
+	 * @param string $string String to escape.
+	 * @param array|null $extras Other characters to strip.
+	 * @return string Escaped string.
+	 */
+	public static function escAlnum($string, array $extras = null) {
+		if (! isset($extras) && ctype_alnum($string)) {
+			return $string;
+		}
+		$pattern = '/[^a-zA-Z0-9'. (isset($extras) ? $extras : '') .']/';
+		return preg_replace($pattern, '', $string);
+	}
 			
 	/**
 	 * Escapes text for SQL LIKE special characters % and _.
@@ -59,40 +77,17 @@ class Str {
 	}
 		
 	/**
-	 * Strips non-alphanumeric characters from a string.
-	 * Add characters to $extras to preserve those as well.
-	 * Extra chars should be escaped for use in preg_*() functions.
-	 * 
-	 * @param string $str String to escape.
-	 * @param array|null $extras Other characters to strip.
-	 * @return string Escaped string.
-	 */
-	public static function escAlnum( $str, array $extras = null ){
-		
-		if (! isset($extras) && ctype_alnum($str)) {
-			return $str;
-		}
-		
-		$pattern = '/[^a-zA-Z0-9';
-		
-		if (! empty($extras)) {
-			$pattern .= implode('', $extras);
-		}
-		
-		$pattern .= ']/';
-		
-		return preg_replace($pattern, '', $str);
-	}
-		
-	/**
 	 * Returns true if $haystack starts with $needle.
 	 * 
 	 * @param string $haystack String to search within.
 	 * @param string $needle String to find.
+	 * @param boolean $match_case Whether to match case-sensitively. Default true.
 	 * @return boolean 
 	 */
-	public static function startsWith( $haystack, $needle ) {
-		return 0 === strpos($haystack, $needle);
+	public static function startsWith($haystack, $needle, $match_case = true) {
+		return $match_case
+			? 0 === strpos($haystack, $needle)
+			: 0 === stripos($haystack, $needle);
 	}
 	
 	/**
@@ -100,48 +95,15 @@ class Str {
 	 * 
 	 * @param string $haystack String to search within.
 	 * @param string $needle String to find.
+	 * @param boolean $match_case Whether to match case-sensitively. Default true.
 	 * @return boolean 
 	 */
-	public static function endsWith( $haystack, $needle ) {
-		return $needle === substr($haystack, -strlen($needle));
+	public static function endsWith($haystack, $needle, $match_case = true) {
+		return $match_case
+			? 0 === strcmp($needle, substr($haystack, -strlen($needle)))
+			: 0 === strcasecmp($needle, substr($haystack, -strlen($needle)));
 	}
 	
-	/**
-	 * Returns part of a string starting at the end of a contained string.
-	 * 
-	 * Alternate desc: Returns the segment of $haystack starting at end of $needle.
-	 * 
-	 * @param string $haystack String to search within.
-	 * @param string $needle String to find.
-	 * @return string|null String segment if $needle found, otherwise NULL 
-	 */
-	public static function substrAfter($haystack, $needle) {
-			
-		if (false !== ($pos = strpos($haystack, $needle))) {
-			return substr($haystack, $pos+strlen($needle));
-		}
-		
-		return null;
-	}
-	
-	/**
-	 * Returns part of a string up to the first occurance of another string.
-	 * 
-	 * Alternate desc: Returns the segment of $haystack up to $needle.
-	 * 
-	 * @param string $haystack String to search within.
-	 * @param string $needle String to find.
-	 * @return string|null String segment if $needle found, otherwise NULL 
-	 */
-	public static function substrBefore($haystack, $needle) {
-		
-		if (false !== ($pos = strpos($haystack, $needle))) {
-			return substr($haystack, 0, $pos);
-		}
-		
-		return null;
-	}
-		
 	/** 
 	 * Returns 1st occurance of text between two strings.
 	 * 
@@ -152,8 +114,8 @@ class Str {
 	 * @param string $end The ending string
 	 * @return string Text between $start and $end. 
 	 */
-	public static function between( $source, $start, $end ){
-		$str1 = explode($start, $source);
+	public static function between($str, $start, $end) {
+		$str1 = explode($start, $str);
 		$str2 = explode($end, $str1[1]);
 		return trim($str2[0]);
 	}
@@ -162,27 +124,65 @@ class Str {
 	* Strips unescaped unicode characters (e.g. u00a0). 
 	* @uses mb_detect_encoding, mb_convert_encoding
 	*/
-	public static function stripInvalidUnicode( $str ){
+	public static function stripInvalidUnicode($str) {
 		
 		$encoding = mb_detect_encoding($str);
 		
-		if ('UTF-8' !== $encoding || 'ASCII' !== $encoding){
-			$str = mb_convert_encoding($str, 'UTF-8');
+		if ('UTF-8' !== $encoding && 'ASCII' !== $encoding) {
+				
+			$mbsub = ini_get('mbstring.substitute_character');
+			
+			ini_set('mbstring.substitute_character', "none");
+			
+	  		$str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
+	  		
+			ini_set('mbstring.substitute_character', $mbsub);
 		}
 		
 		return stripcslashes(preg_replace('/\\\\u([0-9a-f]{4})/i', '', $str));
 	}
 	
 	/**
-	 * Limit string to a given number of sentences.
+	 * Get a given number of sentences from a string.
 	 *
 	 * @param string $text The full string of sentences.
-	 * @param integer $count Number of sentences to return.
+	 * @param integer $num Number of sentences to return.
+	 * @param boolean|array $strip Whether to strip abbreviations (they break the function).
+	 * Pass an array to account for those abbreviations as well. See function body.
 	 * @return string Given number of sentences.
 	 */
-	public static function limitSentences( $text, $count ){
-		preg_match('/^([^.!?]*[\.!?]+){0,'. $count .'}/', strip_tags($text), $excerpt);
-		return $excerpt[0];
+	public static function limitSentences($text, $num, $strip = false) {
+		$text = strip_tags($text);
+		// shall we strip?
+		if ($strip) {
+			// brackets are for uniqueness - if we just removed the 
+			// dots, then "Mr" would match "Mrs" when we reconvert.
+			$replace = array(
+				'Dr.' => '<Dr>',
+				'Mrs.' => '<Mrs>',
+				'Mr.' => '<Mr>',
+				'Ms.' => '<Ms>',
+				'Co.' => '<Co>',
+				'Ltd.' => '<Ltd>',
+				'Inc.' => '<Inc>',
+			);
+			// add extra strings to strip
+			if (is_array($strip)) {
+				foreach($strip as $s) {
+					$replace[$s] = '<'.str_replace('.', '', $s).'>';	
+				}
+			}
+			// replace with placeholders and set the key/value vars
+			$text = str_replace(
+				$replace_keys = array_keys($replace), 
+				$replace_vals = array_values($replace), 
+				$text
+			);
+		}
+		// get given number of strings delimited by ".", "!", or "?"
+		preg_match('/^([^.!?]*[\.!?]+){0,'.$num.'}/', $text, $match);
+		// replace the placeholders with originals
+		return $strip ? str_replace($replace_vals, $replace_keys, $match[0]) : $match[0];
 	}
 
 	/**
@@ -193,156 +193,23 @@ class Str {
 	 * @param string $template String format to apply
 	 * @return string Formatted string.
 	 */
-	public static function format( $string, $template ){
-		
-		$result = ''; $fpos = 0; $spos = 0;
+	public static function format($string, $template) {
+			
+		$result = ''; 
+		$fpos = 0; 
+		$spos = 0;
 		
 		while ((strlen($template) - 1) >= $fpos) {
-			
 			if (ctype_alnum(substr($template, $fpos, 1))) {
 				$result .= substr($string, $spos, 1);
 				$spos++;
 			} else {
 				$result .= substr($template, $fpos, 1);
 			}
-			
 			$fpos++;
 		}
 		
 		return $result;	
-	}
-	
-	/**
-	 * Formats a phone number based on string length.
-	 */
-	public static function formatPhone( $phone ){
-			
-		// remove any pre-existing formatting characters
-		$string = str_replace(array('(',')','+','-',' '), '', $phone);
-		
-		switch( strlen($string) ){
-			case 7:
-				$tmpl = '000-0000';
-				break;
-			case 10:
-				$tmpl = '(000) 000-0000';
-				break;
-			case 11:
-				$tmpl = '+0 (000) 000-0000';
-				break;
-			case 12:
-				$tmpl = '+00 00 0000 0000';
-				break;
-		}
-		
-		return self::format($string, $tmpl);
-	}
-	
-	/**
-	 * Formats a hash/digest based on string length.
-	 */
-	public static function formatHash( $hash ){
-		
-		// remove any pre-existing formatting characters
-		$string = str_replace(array('(',')','+','-',' '), '', $hash);
-		
-		switch( strlen($string) ){
-			case 16:
-				$tmpl = '00000000-0000-0000';
-				break;
-			case 24:
-				$tmpl = '00000000-0000-0000-00000000';
-				break;
-			case 32:
-				$tmpl = '00000000-0000-0000-0000-000000000000';
-				break;
-			case 40:
-				$tmpl = '00000000-0000-0000-00000000-0000-0000-00000000';
-				break;
-			case 48:
-				$tmpl = '00000000-0000-00000000-0000-0000-00000000-0000-00000000';
-				break;
-		}
-		
-		return self::format($string, $tmpl);
-	}
-		
-	/**
-	* Generate a random string from one of several of character pools.
-	*
-	* @param int $length Length of the returned random string (default 16)
-	* @param string $type The type of characters to use to generate string.
-	* @return string A random string
-	*/
-	public static function rand( $length = 16, $pool_type = 'alnum' ){
-		$str = '';
-		
-		switch ( $pool_type ) {
-			case 'alnum':
-			case 'alphanumeric':
-			default:
-				$pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-				break;
-			case 'complex':
-				$pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()';
-				break;
-			case 'salt':
-				$pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()-_[]{}<>~`+=,.;:/?';
-				break;
-			case 'hexdec':
-			case 'hexadecimal':
-				$pool = '0123456789abcdef';
-				break;
-			case 'numeric':
-			case 'num':
-				$pool = '0123456789';
-				break;
-			case 'alpha':
-				$pool = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-				break;
-			case 'nonzero':
-				$pool = '123456789';
-				break;
-			case 'distinct':
-				$pool = '2345679ACDEFHJKLMNPRSTUVWXYZ';
-				break;
-			case 'allchars':
-				$pool = '~!@#$%^&*()_-+=[]{};:,<.>/?';
-				break;
-			case 'chars':
-				$pool = '!@#$%^&*()';
-				break;
-			case 'extrachars':
-			case 'chars2':
-				$pool = '-_ []{}<>~`+=,.;:/?';
-				break;
-		}
-		
-		$pool_len = strlen($pool) - 1;
-		
-		for ( $i=0; $i < $length; $i++ ) {
-			$str .= substr($pool, mt_rand(0, $pool_len), 1);
-		}
-		
-		return $str;	
-	}
-	
-	/**
-	 * Writes an array of data as CSV to a file.
-	 */
-	public static function writeCsv( array $data, $filepath ){
-	    
-	    if (! is_writable($filepath)) {
-	    	throw new \InvalidArgumentException("File given is not writable - $filepath.");
-	    }
-		
-	    $output = fopen($filepath, "w");
-	    
-	    foreach ($data as $row) {
-	        fputcsv($output, $row);
-	    }
-	    
-	    fclose($output);
 	}
 		
 	/**
@@ -353,30 +220,30 @@ class Str {
 	 * $str = pearclass($str); // now 'My_Camel_Class'
 	 * </code>
 	 */
-	public static function pearClass( $str ){
-		$strWithSpaces = self::escAlnum(trim(preg_replace('/[A-Z]/', ' $0', $str)));
+	public static function pearClass($str) {
+		$strWithSpaces = static::escAlnum(trim(preg_replace('/[A-Z]/', ' $0', $str)));
 		return str_replace(' ', '_', ucwords($strWithSpaces));
 	}
 	
 	/**
 	 * Converts a string to "snake_case"
 	 */
-	public static function snakeCase( $str ){
-		return strtolower( self::pearClass($str) );
+	public static function snakeCase($str) {
+		return strtolower(static::pearClass($str));
 	}
 	
 	/**
 	 * Converts a string to "StudlyCaps"
 	 */
-	public static function studlyCaps( $str ){
+	public static function studlyCaps($str) {
 		return str_replace(' ', '', ucwords(trim(preg_replace('/[^a-zA-Z]/', ' ', $str))));
 	}
 	
 	/**
 	 * Converts a string to "camelCase"
 	 */
-	public static function camelCase( $str ){
-		return lcfirst(self::studlyCaps($str));
+	public static function camelCase($str) {
+		return lcfirst(static::studlyCaps($str));
 	}
 	
 	/**
@@ -388,9 +255,9 @@ class Str {
 		$indent_level = 0;
 		$in_string = false;
 		$len = strlen($json);
-		for ( $c = 0; $c < $len; $c++ ){
+		for ( $c = 0; $c < $len; $c++ ) {
 			$char = $json[$c];
-			switch ($char){
+			switch ($char) {
 				case '{':
 				case '[':
 					if ( !$in_string ){
@@ -441,7 +308,7 @@ class Str {
 	 * @param mixed $data Data that might be serialized.
 	 * @return mixed A scalar data
 	 */
-	public static function maybeSerialize( $data ) {
+	public static function maybeSerialize($data) {
 		if (is_array($data) || is_object($data))
 			return serialize($data);
 		return $data;
@@ -453,8 +320,8 @@ class Str {
 	 * @param string $value Maybe unserialized original, if is needed.
 	 * @return mixed Unserialized data can be any type.
 	 */
-	public static function maybeUnserialize( $value ) {
-		if ( self::isSerialized($value) )
+	public static function maybeUnserialize($value) {
+		if (self::isSerialized($value))
 			return @unserialize($value);
 		return $value;
 	}
@@ -466,14 +333,14 @@ class Str {
 	 * @param bool $strict Optional. Whether to be strict about the end of the string. Defaults true.
 	 * @return bool False if not serialized and true if it was.
 	 */
-	public static function isSerialized( $data, $strict = true ) {
+	public static function isSerialized($data, $strict = true) {
 			
-		if ( ! is_string($data) )
+		if (! is_string($data))
 			return false;
 		
 		$data = trim($data);
 	 	
-	 	if ( 'N;' == $data ) 
+	 	if ('N;' == $data) 
 	 		return true; // serialized null
 		
 		$length = strlen($data);

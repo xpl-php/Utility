@@ -7,6 +7,10 @@ class Arr
 
 	/**
 	 * Retrieves a value from $array given its path in dot notation
+	 * 
+	 * @param array &$array Array of values.
+	 * @param string $dotpath Item path given in dot-notation (e.g. "some.nested.item")
+	 * @return mixed Value of item if found, otherwise null.
 	 */
 	public static function dotGet(array &$array, $dotpath) {
 
@@ -25,6 +29,11 @@ class Arr
 
 	/**
 	 * Sets a value in $array given its path in dot notation.
+	 * 
+	 * @param array &$array Array
+	 * @param string $dotpath Item path in dot-notation.
+	 * @param mixed $value Item value.
+	 * @return mixed Value
 	 */
 	public static function dotSet(array &$array, $dotpath, $value) {
 
@@ -41,6 +50,10 @@ class Arr
 
 	/**
 	 * Unets a value in $array given its path in dot notation.
+	 * 
+	 * @param array &$array Array
+	 * @param string $dotpath Item path to unset in dot notation.
+	 * @return void
 	 */
 	public static function dotUnset(array &$array, $dotpath) {
 
@@ -64,12 +77,13 @@ class Arr
 	 */
 	public static function parse($args, $defaults = '') {
 		
-		if (is_array($args))
+		if (is_array($args)) {
 			$r = &$args;
-		elseif (is_object($args))
-			$r = get_object_vars($args);
-		else
+		} else if (is_string($args)) {
 			parse_str($args, $r);
+		} else {
+			$r = get_object_vars($args);
+		}
 
 		return is_array($defaults) ? array_merge($defaults, $r) : $r;
 	}
@@ -129,10 +143,11 @@ class Arr
 
 		foreach ( $list as $key => $value ) {
 
-			if (is_object($value))
-				$list[$key] = $value->$field;
-			else
+			if (is_array($value))
 				$list[$key] = $value[$field];
+			else
+				$list[$key] = $value->$field;
+				
 		}
 
 		return $list;
@@ -151,10 +166,10 @@ class Arr
 
 		foreach ( $list as &$value ) {
 
-			if (is_object($value))
-				$value = $value->$field;
-			else
+			if (is_array($value))
 				$value = $value[$field];
+			else
+				$value = $value->$field;
 		}
 
 		return $list;
