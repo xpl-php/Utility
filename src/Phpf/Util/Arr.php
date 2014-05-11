@@ -13,17 +13,11 @@ class Arr
 	 * @return mixed Value of item if found, otherwise null.
 	 */
 	public static function dotGet(array &$array, $dotpath) {
-
-		if (false === strpos($dotpath, '.'))
-			return isset($array[$dotpath]) ? $array[$dotpath] : null;
-
 		$loc = &$array;
-
-		foreach ( explode('.', $dotpath) as $step ) {
+		foreach (explode('.', $dotpath) as $step) {
 			if (isset($loc[$step]))
 				$loc = &$loc[$step];
 		}
-
 		return $loc;
 	}
 
@@ -36,15 +30,10 @@ class Arr
 	 * @return mixed Value
 	 */
 	public static function dotSet(array &$array, $dotpath, $value) {
-
-		if (false === strpos($dotpath, '.'))
-			return $array[$dotpath] = $value;
-
 		$loc = &$array;
-
-		foreach ( explode('.', $dotpath) as $step )
+		foreach (explode('.', $dotpath) as $step) {
 			$loc = &$loc[$step];
-
+		}
 		return $loc = $value;
 	}
 

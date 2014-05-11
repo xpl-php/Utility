@@ -33,7 +33,7 @@ class Str {
 	 */
 	public static function esc( $string, $flag = self::ESC_ASCII ){
 		
-		preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
+		$string = preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
 		
 		if ($flag === self::ESC_HTML) {
 			return htmlspecialchars($string, ENT_QUOTES, false);
