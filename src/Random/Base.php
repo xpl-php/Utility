@@ -21,15 +21,15 @@ abstract class Base {
 		return null;
 	}
 	
-	final public function getValue() {
+	public function getValue() {
 		return $this->value;
 	}
 	
-	final public function __toString() {
+	public function __toString() {
 		return $this->value;
 	}
 	
-	final public function regenerate($length) {
+	public function regenerate($length) {
 		$this->value = $this->generate($length);
 		return $this;
 	}

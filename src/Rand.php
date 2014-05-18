@@ -229,7 +229,7 @@ class Rand {
 			
 		if (! is_numeric($val)) {
 			if (null === $id = static::charsId($val)) {
-				trigger_error("Unknown character list ID '$val'.", E_USER_WARNING);
+				trigger_error("Unknown character list ID '$val'.");
 				return null;
 			}
 		} else {
@@ -250,7 +250,7 @@ class Rand {
 				case 13313: // distinct
 					return static::CHARS_DISTINCT;
 				default: // no idea
-					trigger_error("Unknown character list ID '$val'.", E_USER_WARNING);
+					trigger_error("Unknown character list ID '$val'.");
 					return null;
 			}
 		}

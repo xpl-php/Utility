@@ -13,11 +13,17 @@ class Arr
 	 * @return mixed Value of item if found, otherwise null.
 	 */
 	public static function dotGet(array &$array, $dotpath) {
+		
+		if (false === strpos($dotpath, '.')) {
+			return isset($array[$dotpath]) ? $array[$dotpath] : null;
+		}
+		
 		$loc = &$array;
 		foreach (explode('.', $dotpath) as $step) {
 			if (isset($loc[$step]))
 				$loc = &$loc[$step];
 		}
+		
 		return $loc;
 	}
 
@@ -30,10 +36,16 @@ class Arr
 	 * @return mixed Value
 	 */
 	public static function dotSet(array &$array, $dotpath, $value) {
+		
+		if (false === strpos($dotpath, '.')) {
+			return $array[$dotpath] = $value;
+		}
+			
 		$loc = &$array;
 		foreach (explode('.', $dotpath) as $step) {
 			$loc = &$loc[$step];
 		}
+		
 		return $loc = $value;
 	}
 
@@ -45,16 +57,22 @@ class Arr
 	 * @return void
 	 */
 	public static function dotUnset(array &$array, $dotpath) {
-
-		if (false === strpos($dotpath, '.'))
-			return $array[$dotpath] = $value;
-
-		$loc = &$array;
-
-		foreach ( explode('.', $dotpath) as $step )
-			$loc = &$loc[$step];
-
-		unset($loc);
+			
+		if (false !== $pos = strpos($dotpath, '.')) {
+			
+			// e.g. "group"
+			$step = substr($dotpath, 0, $pos);
+			
+			// this is key, pun intended (but seriously)
+			if (! array_key_exists($step, $array)) {
+				return;
+			}
+			
+			// e.g. "item" - will fail the strpos() check and unset the item
+			static::dotUnset($array[$step], substr($dotpath, $pos + 1));
+		}
+		
+		unset($array[$dotpath]);
 	}
 
 	/**
