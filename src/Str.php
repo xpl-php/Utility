@@ -1,53 +1,88 @@
 <?php
 
-namespace Phpf\Util;
+namespace xpl\Utility;
 
 class Str {
 	
-	/**
-	 * Use htmlentities() with ENT_COMPAT
-	 * most aggressive
-	 * @var string
-	 */
-	const ESC_HTML = 'html';
+	protected static $loc;
 	
 	/**
-	 * Strip ISO-8851-1 chars (ASCII >= 128).
-	 * @var string
+	 * Checks whether given string looks like a valid URL.
+	 * 
+	 * A valid URL will either start with two slashes ("//") or
+	 * contain a protocol followed by a colon and two slashes ("://").
+	 * 
+	 * @param string $str String to check.
+	 * @return boolean
 	 */
-	const ESC_ASCII = 'ascii';
+	public static function isUrl($str) {
+		return 0 === strpos($str, '//') || fnmatch('*://*', $str);
+	}
 	
 	/**
-	 * Allow all ISO-8851-1 chars.
-	 * least aggressive
-	 * @var string
+	 * Checks whether the given value is a valid JSON string.
+	 * 
+	 * @param string $str String to test.
+	 * @return boolean True if string is JSON, otherwise false.
 	 */
-	const ESC_ISO = 'iso';
+	public static function isJson($str) {
+		if (! is_string($str)) {
+			return false;
+		}
+		$json = @json_decode($str, true);
+		return JSON_ERROR_NONE === json_last_error() ? is_array($json) : false;
+	}
+	
+	/**
+	 * Checks whether the given value is a valid serialized string.
+	 * 
+	 * @param mixed $data Value to check if serialized
+	 * @return boolean TRUE If value is a valid serialized string, otherwise false.
+	 */
+	public static function isSerialized($data) {
+		if (! is_string($data) || empty($data)) {
+	    	return false;
+		}
+		return @unserialize($data) !== false;
+	}
+	
+	/**
+	 * Checks whether the given value is a valid XML string.
+	 * 
+	 * @param mixed $data Value to check if XML.
+	 * @return boolean TRUE if value is a valid XML string, otherwise false.
+	 */
+	public static function isXml($data) {
+		if (! is_string($data) || '<?xml' !== substr($data, 0, 5)) {
+			return false;
+		}
+		return (simplexml_load_string($data) instanceof \SimpleXMLElement);
+	}
 	
 	/**
 	 * Escape a string using filter_var
 	 * 
 	 * @param string $string The string to sanitize.
-	 * @param bool $flags Flags = strip non-ASCII chars
+	 * @param bool $flags filter_var() flags. Default: FILTER_FLAG_NONE
 	 * @return string Sanitized string.
 	 */
-	public static function esc( $string, $flag = self::ESC_ASCII ){
-		
+	public static function esc($string, $flags = 0) {
 		$string = preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
-		
-		if ($flag === self::ESC_HTML) {
-			return htmlspecialchars($string, ENT_QUOTES, false);
-		}
-		
-		if ($flag === self::ESC_ASCII) {
-			$flag = FILTER_FLAG_STRIP_HIGH;
-		} elseif ($flag === self::ESC_ISO) {
-			$flag = FILTER_FLAG_NONE;
-		}
-		
-		return filter_var($string, FILTER_SANITIZE_STRING, $flag);
+		empty($flags) and $flags = FILTER_FLAG_NONE;
+		return filter_var($string, FILTER_SANITIZE_STRING, $flags);
 	}
-		
+	
+	/**
+	 * Strips non-ASCII (standard) characters from a string.
+	 * 
+	 * @param string $string The string to sanitize.
+	 * @return string Sanitized string.
+	 */
+	public static function escAscii($string) {
+		$string = preg_replace('/[\x00-\x08\x0B-\x1F]/', '', $string);
+		return filter_var($string, FILTER_SANITIZE_STRING, FILTER_FLAG_STRIP_HIGH|FILTER_FLAG_STRIP_BACKTICK);
+	}
+
 	/**
 	 * Strips non-alphanumeric characters from a string.
 	 * 
@@ -55,14 +90,14 @@ class Str {
 	 * Extra chars should be escaped for use in preg_*() functions.
 	 * 
 	 * @param string $string String to escape.
-	 * @param array|null $extras Other characters to strip.
+	 * @param string $extras [Optional] Other characters to strip.
 	 * @return string Escaped string.
 	 */
-	public static function escAlnum($string, array $extras = null) {
-		if (! isset($extras) && ctype_alnum($string)) {
+	public static function escAlnum($string, $extras = null) {
+		if (empty($extras) && ctype_alnum($string)) {
 			return $string;
 		}
-		$pattern = '/[^a-zA-Z0-9'. (isset($extras) ? $extras : '') .']/';
+		$pattern = '/[^a-zA-Z0-9'.(isset($extras) ? $extras : '').']/';
 		return preg_replace($pattern, '', $string);
 	}
 			
@@ -72,7 +107,7 @@ class Str {
 	 * @param string $text The text to be escaped.
 	 * @return string text, safe for inclusion in LIKE query.
 	 */
-	public static function escSqlLike( $text ) {
+	public static function escSqlLike($text) {
 		return str_replace(array("%", "_"), array("\\%", "\\_"), $text);
 	}
 		
@@ -105,18 +140,18 @@ class Str {
 	}
 	
 	/** 
-	 * Returns 1st occurance of text between two strings.
+	 * Returns the text between (the first occurance of) two strings.
 	 * 
 	 * The "between" strings are not included in output.
 	 * 
-	 * @param string $source The string in which to search.
-	 * @param string $start The starting string
-	 * @param string $end The ending string
+	 * @param string $string The text string.
+	 * @param string $start_str The starting string
+	 * @param string $end_str The ending string
 	 * @return string Text between $start and $end. 
 	 */
-	public static function between($str, $start, $end) {
-		$str1 = explode($start, $str);
-		$str2 = explode($end, $str1[1]);
+	public static function between($string, $start_str, $end_str) {
+		$str1 = explode($start_str, $string);
+		$str2 = explode($end_str, $str1[1]);
 		return trim($str2[0]);
 	}
 	
@@ -125,18 +160,17 @@ class Str {
 	* @uses mb_detect_encoding, mb_convert_encoding
 	*/
 	public static function stripInvalidUnicode($str) {
-		
-		$encoding = mb_detect_encoding($str);
-		
-		if ('UTF-8' !== $encoding && 'ASCII' !== $encoding) {
+			
+		if (static::mb()) {
 				
-			$mbsub = ini_get('mbstring.substitute_character');
+			$encoding = mb_detect_encoding($str);
 			
-			ini_set('mbstring.substitute_character', "none");
-			
-	  		$str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
-	  		
-			ini_set('mbstring.substitute_character', $mbsub);
+			if ('UTF-8' !== $encoding && 'ASCII' !== $encoding) {
+				// temporarily unset mb substitute character and convert
+				$mb_sub = ini_set('mbstring.substitute_character', "none");
+				$str = mb_convert_encoding($str, 'UTF-8', 'UTF-8');
+				ini_set('mbstring.substitute_character', $mb_sub);
+			}
 		}
 		
 		return stripcslashes(preg_replace('/\\\\u([0-9a-f]{4})/i', '', $str));
@@ -194,11 +228,9 @@ class Str {
 	 * @return string Formatted string.
 	 */
 	public static function format($string, $template) {
-			
 		$result = ''; 
 		$fpos = 0; 
 		$spos = 0;
-		
 		while ((strlen($template) - 1) >= $fpos) {
 			if (ctype_alnum(substr($template, $fpos, 1))) {
 				$result .= substr($string, $spos, 1);
@@ -220,9 +252,9 @@ class Str {
 	 * $str = pearclass($str); // now 'My_Camel_Class'
 	 * </code>
 	 */
-	public static function pearClass($str) {
-		$strWithSpaces = static::escAlnum(trim(preg_replace('/[A-Z]/', ' $0', $str)));
-		return str_replace(' ', '_', ucwords($strWithSpaces));
+	public static function pearCase($str) {
+		$with_spaces = preg_replace('/[^a-zA-Z0-9]/', '_', trim(preg_replace('/[A-Z]/', ' $0', $str)));
+		return preg_replace('/[_]{2,}/', '_', str_replace(' ', '_', ucwords($with_spaces)));
 	}
 	
 	/**
@@ -235,15 +267,106 @@ class Str {
 	/**
 	 * Converts a string to "StudlyCaps"
 	 */
-	public static function studlyCaps($str) {
-		return str_replace(' ', '', ucwords(trim(preg_replace('/[^a-zA-Z]/', ' ', $str))));
+	public static function studlyCase($str) {
+		return str_replace(' ', '', ucwords(trim(preg_replace('/[^a-zA-Z0-9]/', ' ', $str))));
 	}
 	
 	/**
 	 * Converts a string to "camelCase"
 	 */
 	public static function camelCase($str) {
-		return lcfirst(static::studlyCaps($str));
+		return lcfirst(static::studlyCase($str));
+	}
+	
+	/**
+	 * If $val is a numeric string, converts to float or integer depending on 
+	 * whether a decimal point is present. Otherwise returns original.
+	 * 
+	 * @param string $val If numeric string, converted to integer or float.
+	 * @return scalar Value as string, integer, or float.
+	 */
+	public static function castNum($str) {
+		if (! is_numeric($val) || ! is_string($val)) {
+			return $val;
+		}
+		$decimal = static::getDecimalPoint();
+		return (strpos($val, $decimal) === false) ? (int) $val : (float) $val;
+	}
+	
+	/**
+	 * Whether Multibyte string extension is loaded.
+	 * 
+	 * @return boolean
+	 */
+	public static function mb() {
+		isset(static::$mb) or static::$mb = extension_loaded('mbstring');
+		return static::$mb;
+	}
+	
+	/**
+	 * Returns the decimal point in localized format.
+	 * 
+	 * @return string
+	 */
+	public static function getDecimalPoint() {
+		if (! isset(static::$loc)) {
+			static::$loc = localeconv();
+			if (empty(static::$loc['decimal_point'])) {
+				static::$loc['decimal_point'] = '.';
+			}
+		}
+		return static::$loc['decimal_point'];
+	}
+	
+	/**
+	 * Serialize data, if needed.
+	 *
+	 * @param mixed $data Data that might be serialized.
+	 * @return mixed A scalar data
+	 */
+	public static function maybeSerialize($data) {
+		if (is_array($data) || is_object($data)) {
+			return serialize($data);
+		}
+		return $data;
+	}
+	
+	/**
+	 * Unserialize value only if it was serialized.
+	 *
+	 * @param string $value Possibly serialized value.
+	 * @return mixed
+	 */
+	public static function maybeUnserialize($value) {
+		if (static::isSerialized($value)) {
+			return unserialize($value);
+		}
+		return $value;
+	}
+	
+	/**
+	 * Obfuscate an email address to prevent spam-bot harvesting.
+	 * 
+	 * @author wordpress
+	 * 
+	 * @param string $email Email address.
+	 * @param boolean $hex_encode Whether to hex encode some letters. Default false.
+	 * @return string Obfuscated email address.
+	 */
+	public static function antispamEmail($email, $hex_encode = false) {
+		$email_address = '';
+		$hex_encoding = 1 + (int)(bool)$hex_encode;
+		foreach(str_split($email) as $letter) {
+			$j = mt_rand(0, $hex_encoding);
+			if ($j == 0) {
+				$email_address .= '&#'.ord($letter).';';
+			} else if ($j == 1) {
+				$email_address .= $letter;
+			} else if ($j == 2) {
+				$email_address .= '%'.sprintf('%02s', dechex(ord($letter)));
+			}
+		}
+		return str_replace('@', '@', $email_address);
 	}
 	
 	/**
@@ -255,7 +378,7 @@ class Str {
 		$indent_level = 0;
 		$in_string = false;
 		$len = strlen($json);
-		for ( $c = 0; $c < $len; $c++ ) {
+		for ($c = 0; $c < $len; $c++) {
 			$char = $json[$c];
 			switch ($char) {
 				case '{':
@@ -300,90 +423,6 @@ class Str {
 			}
 		}
 		return $new_json;	
-	}
-
-	/**
-	 * Serialize data, if needed.
-	 *
-	 * @param mixed $data Data that might be serialized.
-	 * @return mixed A scalar data
-	 */
-	public static function maybeSerialize($data) {
-		if (is_array($data) || is_object($data))
-			return serialize($data);
-		return $data;
-	}
-	
-	/**
-	 * Unserialize value only if it was serialized.
-	 *
-	 * @param string $value Maybe unserialized original, if is needed.
-	 * @return mixed Unserialized data can be any type.
-	 */
-	public static function maybeUnserialize($value) {
-		if (self::isSerialized($value))
-			return @unserialize($value);
-		return $value;
-	}
-	
-	/**
-	 * Check value to find if it was serialized.
-	 *
-	 * @param mixed $data Value to check to see if was serialized.
-	 * @param bool $strict Optional. Whether to be strict about the end of the string. Defaults true.
-	 * @return bool False if not serialized and true if it was.
-	 */
-	public static function isSerialized($data, $strict = true) {
-			
-		if (! is_string($data))
-			return false;
-		
-		$data = trim($data);
-	 	
-	 	if ('N;' == $data) 
-	 		return true; // serialized null
-		
-		$length = strlen($data);
-		
-		if ( $length < 4 || ':' !== $data[1] )
-			return false; // no datatype char
-		
-		if ( $strict ) {
-			$lastc = $data[$length-1];
-			if ( ';' !== $lastc && '}' !== $lastc )
-				return false;
-		} else {
-			$semicolon = strpos($data, ';');
-			$brace     = strpos($data, '}');
-			// Either ; or } must exist, but neither 
-			// must be in the first X characters.
-			if ( (false === $semicolon && false === $brace)
-				|| (false !== $semicolon && $semicolon < 3)
-				|| (false !== $brace && $brace < 4) ) 
-			{
-				return false;
-			}
-		}
-		
-		$token = $data[0];
-		
-		switch ($token){
-			case 's' :
-				if ( ($strict && '"' !== $data[$length-2]) || false === strpos($data, '"') ){
-					return false;
-				}
-				// or else fall through
-			case 'a' :
-			case 'O' :
-				return (bool) preg_match( "/^{$token}:[0-9]+:/s", $data );
-			case 'b' :
-			case 'i' :
-			case 'd' :
-				$end = $strict ? '$' : '';
-				return (bool) preg_match( "/^{$token}:[0-9.E-]+;$end/", $data );
-		}
-		
-		return false;
 	}
 	
 }

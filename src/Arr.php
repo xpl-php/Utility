@@ -1,211 +1,534 @@
 <?php
 
-namespace Phpf\Util;
+namespace xpl\Utility;
 
-class Arr
-{
-
+class Arr {
+	
 	/**
-	 * Retrieves a value from $array given its path in dot notation
+	 * in_array() with case-sensitive option.
 	 * 
-	 * @param array &$array Array of values.
+	 * @param string $needle Needle
+	 * @param array $haystack Haystack
+	 */
+	public static function in($needle, $haystack, $strict = true, $case_insensitive = false) {
+		
+		if ($case_insensitive) {
+			return in_array(strtolower($needle), array_map('strtolower', $haystack), $strict);
+		}
+		
+		return in_array($needle, $haystack, $strict);
+	}
+	
+	/**
+	 * Retrieves a value from an array given its path in dot notation.
+	 * 
+	 * @param array &$array Associative array.
 	 * @param string $dotpath Item path given in dot-notation (e.g. "some.nested.item")
 	 * @return mixed Value of item if found, otherwise null.
 	 */
-	public static function dotGet(array &$array, $dotpath) {
+	public static function get(array &$array, $key) {
 		
-		if (false === strpos($dotpath, '.')) {
-			return isset($array[$dotpath]) ? $array[$dotpath] : null;
+		if (false === strpos($key, '.')) {
+			return isset($array[$key]) ? $array[$key] : null;
 		}
 		
-		$loc = &$array;
-		foreach (explode('.', $dotpath) as $step) {
-			if (isset($loc[$step]))
-				$loc = &$loc[$step];
+		$a = &$array;
+		
+		foreach(explode('.', $key) as $segment) {
+		
+			if (! isset($a[$segment])) {
+				return null;
+			}
+		
+			$a = &$a[$segment];
 		}
 		
-		return $loc;
+		return $a;
 	}
-
+	
 	/**
-	 * Sets a value in $array given its path in dot notation.
+	 * Sets an array value given its path in dot notation.
 	 * 
-	 * @param array &$array Array
-	 * @param string $dotpath Item path in dot-notation.
-	 * @param mixed $value Item value.
-	 * @return mixed Value
+	 * @param array &$array
+	 * @param string $key
+	 * @param mixed $value
+	 * @return array
 	 */
-	public static function dotSet(array &$array, $dotpath, $value) {
+	public static function set(array &$array, $key, $value) {
 		
-		if (false === strpos($dotpath, '.')) {
-			return $array[$dotpath] = $value;
+		if (false === strpos($key, '.')) {
+			$array[$key] = $value;
+			return $array;
 		}
+		
+		$a =& $array;
+		
+		foreach(explode('.', $key) as $segment) {
 			
-		$loc = &$array;
-		foreach (explode('.', $dotpath) as $step) {
-			$loc = &$loc[$step];
+			isset($a[$segment]) or $a[$segment] = array();
+			
+			$a =& $a[$segment];
 		}
 		
-		return $loc = $value;
+		$a = $value;
+		
+		return $array;
 	}
-
+	
 	/**
-	 * Unets a value in $array given its path in dot notation.
+	 * Unsets an array item given its path in dot notation.
 	 * 
-	 * @param array &$array Array
-	 * @param string $dotpath Item path to unset in dot notation.
+	 * @param array &$array Array to search within.
+	 * @param string $key Dot-notated path.
 	 * @return void
 	 */
-	public static function dotUnset(array &$array, $dotpath) {
+	public static function remove(&$array, $key) {
+		
+		if (false === strpos($key, '.')) {
+			unset($array[$key]);
+			return $array;
+		}
+		
+		$a =& $array;
+		
+		$segments = explode('.', $key);
+		$n = count($segments);
+		$i = 1;
+		
+		foreach($segments as $segment) {
 			
-		if (false !== $pos = strpos($dotpath, '.')) {
-			
-			// e.g. "group"
-			$step = substr($dotpath, 0, $pos);
-			
-			// this is key, pun intended (but seriously)
-			if (! array_key_exists($step, $array)) {
+			if (! array_key_exists($segment, $a)) {
 				return;
 			}
 			
-			// e.g. "item" - will fail the strpos() check and unset the item
-			static::dotUnset($array[$step], substr($dotpath, $pos + 1));
+			if ($i !== $n) {
+				$a =& $a[$segment];
+				$i++;
+			} else {
+				unset($a[$segment]);
+			}
 		}
 		
-		unset($array[$dotpath]);
+		return $array;
 	}
-
+	
 	/**
-	 * Merge user defined arguments into defaults array.
-	 *
-	 * @param string|array|object $args Value to merge with $defaults
-	 * @param array $defaults Array that serves as the defaults.
-	 * @return array Merged user defined values with defaults.
+	 * Checks whether an array item exists with the given path.
+	 * 
+	 * @param array &$array
+	 * @param string $key
+	 * @return boolean
 	 */
-	public static function parse($args, $defaults = '') {
+	public static function exists(array &$array, $key) {
 		
-		if (is_array($args)) {
-			$r = &$args;
-		} else if (is_string($args)) {
-			parse_str($args, $r);
-		} else {
-			$r = get_object_vars($args);
+		if (false === strpos($key, '.')) {
+			return array_key_exists($key, $array);
 		}
-
-		return is_array($defaults) ? array_merge($defaults, $r) : $r;
+		
+		$a =& $array;
+		
+		foreach(explode('.', $key) as $segment) {
+		
+			if (! array_key_exists($segment, $a)) {
+				return false;
+			}
+		
+			$a = &$a[$segment];
+		}
+		
+		return true;
 	}
-
+	
 	/**
-	 * Filters a list of objects, based on a set of key => value arguments.
-	 *
-	 * @param array $list An array of objects to filter
-	 * @param array $args An array of key => value arguments to match against each
-	 * object
-	 * @param string $operator The logical operation to perform:
-	 *    'AND' means all elements from the array must match;
-	 *    'OR' means only one element needs to match;
-	 *    'NOT' means no elements may match.
-	 *   The default is 'AND'.
-	 * @return array
+	 * Filters an array by key.
+	 * 
+	 * Like array_filter(), except that it operates on keys rather than values.
+	 * 
+	 * @example
+	 * $array = array(1 => 1, 2 => 2, "3" => 3, "Four" => 4);
+	 * 
+	 * $newArray = array_filter_keys($array, 'is_numeric');
+	 * 
+	 * // $newArray is = array(1 => 1, 2 => 2, "3" => 3);
+	 * 
+	 * @param array $input Array to filter by key.
+	 * @param callable|null $callback Callback filter. Default null (removes empty keys).
+	 * @return array Key/value pairs of $input having the filtered keys.
 	 */
-	public static function filter($list, $args = array(), $operator = 'AND', $keys_exists_only = false) {
-
-		$operator = strtoupper($operator);
-		$count = count($args);
-		$newarr = array();
-
-		foreach ( $list as $key => $obj ) {
-			#$to_match = (array) $obj;
-			$matched = 0;
-
-			foreach ( $args as $m_key => $m_value ) {
-				if (array_key_exists($m_key, $to_match)) {
-					/**
-					 * Only match keys if $keys_exist_only = true
-					 * @since 2/8/14
-					 */
-					if ($m_value == $to_match[$m_key] || $keys_exists_only) {
-						$matched++;
+	public static function filterKeys(array $input, $callback = null) {
+		$filtered = array_filter(array_keys($input), $callback);
+		return empty($filtered) ? array() : array_intersect_key($input, array_flip($filtered));
+	}
+	
+	/**
+	 * Applies a callback function to each key in an array.
+	 * 
+	 * @example
+	 * $array = array('first' => 1, 'second' => 2, 'third' => 3);
+	 * 
+	 * $newArray = array_map_keys('ucfirst', $array);
+	 * 
+	 * $newArray is: array('First' => 1, 'Second' => 2, 'Third' => 3);
+	 * 
+	 * @param callable $callback Callback to apply to each array key.
+	 * @param array $array Associative array.
+	 * @return array A new array with the callback applied to each key.
+	 */
+	public static function mapKeys($callback, array $array) {
+		return array_combine(array_map($callback, array_keys($array)), array_values($array));
+	}
+	
+	/**
+	 * Applies the callback function to each key/value pair in the array.
+	 *
+	 * The key and value are passed to the callback as the first and
+	 * second arguments, respectively.
+	 *
+	 * @param callable $callback Callback accepting 2 args: key and value. Returns new value.
+	 * @param array $array Associative array to apply callback.
+	 * @return array Array with new values, keys preserved.
+	 */
+	public static function mapAssoc($callback, array $array) {
+		$map = array();
+		foreach ($array as $key => $value) {
+			$map[$key] = $callback($key, $value);
+		}
+		return $map;
+	}
+	
+	/**
+	 * Whether every array value passes the test.
+	 *
+	 * @param array $array Array.
+	 * @param callable $test Callback - must return true or false.
+	 * @return boolean True if all values passed the test, otherwise false.
+	 */
+	public static function validate(array $array, $test) {
+		foreach($array as $key => $value) {
+			if (! $test($value)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * Returns a new array containing only those items which pass the test.
+	 * 
+	 * @param array $array Array.
+	 * @param callable $test Callback passed key and value; must return boolean.
+	 * @return array Array of items that passed the test with keys preserved.
+	 */
+	public static function where(array $array, $test) {
+		$match = array();
+		foreach($array as $key => $value) {
+			if ($test($key, $value)) {
+				$match[$key] = $value;
+			}
+		}
+		return $match;
+	}
+	
+	/**
+	 * Returns an array of elements that satisfy the given conditions.
+	 * 
+	 * @param array $array Array of arrays or objects.
+	 * @param array $conditions Associative array of keys/properties and values.
+	 * @param string $operator One of 'AND', 'OR', or 'NOT'. Default 'AND'.
+	 * @return array Array elements that satisfy the conditions.
+	 */
+	public static function select(array $array, array $conditions, $operator = 'AND') {
+		
+		if (empty($conditions)) {
+			return $array;
+		}
+		
+		$filtered = array();
+		$oper = strtoupper($operator);
+		$n = count($conditions);
+		
+		foreach ($array as $key => $obj) {
+			
+			$matches = 0;
+			
+			if (is_array($obj)) {
+				foreach($conditions as $mKey => $mVal) {
+					if (array_key_exists($mKey, $obj) && $mVal == $obj[$mKey]) {
+						$matches++;
+					}
+				}
+			} else if (is_object($obj)) {
+				foreach($conditions as $mKey => $mVal) {
+					if (isset($obj->$mKey) && $mVal == $obj->$mKey) {
+						$matches++;
 					}
 				}
 			}
-
-			if (('AND' == $operator && $matched == $count) || ('OR' == $operator && $matched > 0) || ('NOT' == $operator && 0 == $matched)) {
-				$newarr[$key] = $obj;
+			
+			if (('AND' === $oper && $matches == $n) 
+				|| ('OR' === $oper && $matches > 0) 
+				|| ('NOT' === $oper && 0 == $matches) 
+			) {
+				$filtered[$key] = $obj;
+	        }
+		}
+		
+		return $filtered;
+	}
+	
+	/**
+	 * Retrieves a key from an array given its position - "first", "last", or an integer.
+	 * 
+	 * If given a positive integer, returns the key in the given position.
+	 * e.g. 1 returns the first key, 2 the second, 3 the third, etc.
+	 * 
+	 * If given a negative integer, returns the key that would correspond to the absolute 
+	 * value of the given position working backwards in the array.
+	 * e.g. -1 returns the last key, -2 the second to last, -3 the third to last, etc.
+	 * 
+	 * If given 0, null is returned.
+	 * 
+	 * @param array $array Associative array.
+	 * @param string|int $pos Position of key to return - "first", "last", or non-zero integer.
+	 * @return scalar Key in given position, if found, otherwise null.
+	 */
+	public static function key(array $array, $pos) {
+		
+		if ("0" == $pos) {
+			return null;
+		}
+		
+		if ('first' === $pos) {
+			reset($array);
+			return key($array);
+		} else if ('last' === $pos) {
+			end($array);
+			return key($array);
+		} else if (! is_numeric($pos)) {
+			throw new InvalidArgumentException('Position must be "first", "last", or int, given: '.gettype($pos));
+		}
+		
+		$pos = (int) $pos;
+		$keys = array_keys($array);
+		
+		if ($pos < 0) {
+			$pos = abs($pos);
+			$keys = array_reverse($keys, false);
+		}
+		
+		return isset($keys[$pos-1]) ? $keys[$pos-1] : null;	
+	}
+	
+	/**
+	 * Pulls a value from each array in an array by key/index and returns an array of the values.
+	 * 
+	 * @param array $arrays Array of arrays.
+	 * @param string|int $index Index offset or key name to pull from each array.
+	 * @param string|null $key_index [Optional] Index/key to use for keys in returned array.
+	 * @return array Indexed array of the value pulled from each array.
+	 */
+	public static function pull(array $arrays, $index, $key_index = null) {
+		$return = array();
+		foreach($arrays as $key => $array) {
+			if (null !== $key_index) {
+				$key = $array[$key_index];
+			}
+			$return[$key] = (null === $index) ? $array : $array[$index];
+		}
+		return $return;
+	}
+	
+	/**
+	 * Calls a method on each object in an array and returns an array of the results.
+	 * 
+	 * @param array $objects Array of objects.
+	 * @param string|null $method Method to call on each object, or null to return whole object.
+	 * @param string|null $key_method [Optional] Method used to get keys used in returned array.
+	 * @return array Indexed array of values returned from each object.
+	 */
+	public static function mpull(array $objects, $method, $key_method = null) {
+		$return = array();
+		foreach($objects as $key => &$obj) {
+			if (null !== $key_method) {
+				$key = $obj->$key_method();
+			}
+			$return[$key] = (null === $method) ? $obj : $obj->$method();
+		}
+		return $return;
+	}
+	
+	/**
+	 * Pulls a property from each object in an array and returns an array of the values.
+	 * 
+	 * @param array $objects Array of objects.
+	 * @param string $property Name of property to get from each object, or null for whole object.
+	 * @param string|null $key_prop [Optional] Property to use for keys in returned array.
+	 * @return array Indexed array of property value from each object.
+	 */
+	public static function ppull(array $objects, $property, $key_prop = null) {
+		$return = array();
+		foreach($objects as $key => $obj) {
+			if (null !== $key_prop) {
+				$key = $obj->$key_prop;
+			}
+			$return[$key] = (null === $property) ? $obj : $obj->$property;
+		}
+		return $return;
+	}
+		
+	/**
+	 * Filters an array of objects by method.
+	 * 
+	 * If object returns an empty value, the object is not included in the returned array.
+	 * To reverse this behavior (only include those which return empty), pass true
+	 * as the third parameter.
+	 * 
+	 * @author facebook/libphutil
+	 * 
+	 * @param array $objects Array of objects.
+	 * @param string $method Method to call on each object.
+	 * @param boolean $negate Whether to return objects which return empty. Default false.
+	 * @return array Objects which pass the filter.
+	 */
+	public static function mfilter(array $objects, $method, $negate = false) {
+		$return = array();
+		foreach($objects as $key => &$object) {
+			$value = $object->$method();
+			if (empty($value)) {
+				$negate and $return[$key] = $object;
+			} else if (! $negate) {
+				$return[$key] = $object;
 			}
 		}
-
-		return $newarr;
+		return $return;
 	}
-
+	
 	/**
-	 * Pluck a certain field out of each object in a list.
-	 *
-	 * @param array $list A list of objects or arrays
-	 * @param int|string $field A field from the object to place instead of the
-	 * entire object
+	 * Array property filter
+	 */
+	public static function pfilter(array $objects, $property, $negate = false) {
+		$return = array();
+		foreach($objects as $key => &$object) {
+			if (empty($object->$property)) {
+				$negate and $return[$key] = $object;
+			} else if (! $negate) {
+				$return[$key] = $object;
+			}
+		}
+		return $return;
+	}
+	
+	/**
+	 * Array key filter
+	 */
+	public static function kfilter(array $arrays, $key, $negate = false) {
+		$return = array();
+		foreach($arrays as $o_key => $array) {
+			if (empty($array[$key])) {
+				$negate and $return[$o_key] = $array;
+			} else if (! $negate) {
+				$return[$o_key] = $array;
+			}
+		}
+		return $return;
+	}
+	
+	/**
+	 * Merges a vector of arrays.
+	 * 
+	 * More performant than using array_merge in a loop.
+	 * 
+	 * @author facebook/libphutil
+	 * 
+	 * @param array $arrays Array of arrays to merge.
+	 * @return array Merged arrays.
+	 */
+	public static function mergev(array $arrays) {
+		return empty($arrays) ? array() : call_user_func_array('array_merge', $arrays);
+	}
+	
+	/**
+	 * Merge arrays into an array by reference.
+	 * 
+	 * @example
+	 * $a = array('One', 'Two');
+	 * $b = array('Three', 'Four');
+	 * $c = array('Five', 'Six');
+	 * 
+	 * array_merge_ref($a, $b, $c);
+	 * 
+	 * $a is now: array('One', 'Two', 'Three', 'Four', 'Five', 'Six');
+	 * 
+	 * @param array &$array Array to merge other arrays into.
+	 * @param ... Arrays to merge.
+	 * @return array Given arrays merged into the first array.
+	 */
+	public static function mergeRef(array &$array /*, $array1 [, ...] */){
+		return $array = call_user_func_array('array_merge', func_get_args());
+	}
+	
+	/**
+	 * Builds an array from an array or object so that all non-scalar items are arrays.
+	 * 
+	 * @param array|\Traversable $thing
 	 * @return array
 	 */
-	public static function pluck($list, $field) {
-
-		foreach ( $list as $key => $value ) {
-
-			if (is_array($value))
-				$list[$key] = $value[$field];
-			else
-				$list[$key] = $value->$field;
+	public static function build($thing) {
+		
+		$array = array();
+		
+		foreach($thing as $key => $value) {
+			
+			if (is_array($value) || is_object($value)) {
+				$array[$key] = static::build($value);
 				
+			} else {
+				
+				if (! is_scalar($value)) {
+					$array[$key] = is_bool($value) ? $value : (string) $value;
+				
+				} else if (is_numeric($value)) {
+					$array[$key] = Str::castNum($value);
+			
+				} else if ($value === 'true' || $value === 'false') {
+					$array[$key] = ($value === 'true');
+			
+				} else {
+					$array[$key] = (string) $value;
+				}
+			}
 		}
-
-		return $list;
+	
+		return $array;
 	}
-
+	
 	/**
-	 * Pluck a certain field out of each object in a list by reference.
-	 * This will change the values of the original array/object list.
-	 *
-	 * @param array $list A list of objects or arrays
-	 * @param int|string $field A field from the object to place instead of the
-	 * entire object
+	 * Converts an array, object, or string to an array.
+	 * 
+	 * @param mixed $thing Array, object, or string (JSON, serialized, or XML).
 	 * @return array
 	 */
-	public static function pluckRef(&$list, $field) {
-
-		foreach ( $list as &$value ) {
-
-			if (is_array($value))
-				$value = $value[$field];
-			else
-				$value = $value->$field;
+	public static function to($thing) {
+			
+		if (is_array($thing)) {
+			return static::build($thing);
 		}
-
-		return $list;
+		
+		if (is_object($thing)) {
+			return is_callable(array($thing, 'toArray')) ? $thing->toArray() : static::build($thing);
+		}
+		
+		if (is_string($thing)) {
+			if (is_json($thing)) {
+				return json_decode($thing, true);
+			} else if (is_serialized($thing)) {
+				return static::to(unserialize($thing));
+			} else if (is_xml($thing)) {
+				return xml2array($thing);
+			}
+		}
+		
+		return (array) $thing;
 	}
-
-	/**
-	 * Implode an array into a list of items separated by $separator.
-	 * Use $last_separator for the last list item.
-	 *
-	 * Useful for natural language lists (e.g first, second & third).
-	 *
-	 * Graciously stolen from humanmade hm-core:
-	 * @link https://github.com/humanmade/hm-core/blob/master/hm-core.functions.php
-	 *
-	 * @param array $array
-	 * @param string $separator. (default: ', ')
-	 * @param string $last_separator. (default: ', and ')
-	 * @return string a list of array values
-	 */
-	public static function implodeNice($array, $separator = ', ', $last_separator = ', and ') {
-
-		if (1 === count($array))
-			return reset($array);
-
-		$end_value = array_pop($array);
-
-		$list = implode($separator, $array);
-
-		return $list.$last_separator.$end_value;
-	}
-
+		
 }

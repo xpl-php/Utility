@@ -1,8 +1,12 @@
 <?php
 
-namespace Phpf\Util;
+namespace xpl\Utility;
 
-class Rand {
+/**
+ * Random string generator and utility.
+ */
+class Rand 
+{
 	
 	/**
 	 * Alphabetic charlist ID.
@@ -82,7 +86,7 @@ class Rand {
 	const CHARS_NUM = '0123456789';
 	
 	/**
-	 * List of punctuation characters.
+	 * List of punctuation characters (backticks, backslashes, and pipe characters omitted).
 	 * @var string
 	 */
 	const CHARS_PUNCT = '~!@#$%^&*()_+=-{}[]\'";:><,./?';
@@ -131,7 +135,7 @@ class Rand {
 	* @return string A random string
 	*/
 	public static function str($length = 12, $type = self::ALNUM) {
-		return static::fromCharlist($length, static::getChars($type));
+		return static::fromChars($length, static::getChars($type));
 	}
 	
 	/**
@@ -141,7 +145,7 @@ class Rand {
 	 * @return string Random string of given length consisting of only letters.
 	 */
 	public static function alpha($length) {
-		return static::fromCharlist($length, static::CHARS_ALPHA);
+		return static::fromChars($length, static::CHARS_ALPHA);
 	}
 
 	/**
@@ -151,7 +155,7 @@ class Rand {
 	 * @return string Random string of given length consisting of only numbers.
 	 */
 	public static function num($length) {
-		return static::fromCharlist($length, static::CHARS_NUM);
+		return static::fromChars($length, static::CHARS_NUM);
 	}
 	
 	/**
@@ -161,7 +165,7 @@ class Rand {
 	 * @return string Random string of given length consisting of only hex chars.
 	 */
 	public static function hex($length) {
-		return static::fromCharlist($length, static::CHARS_HEX);
+		return static::fromChars($length, static::CHARS_HEX);
 	}
 	
 	/**
@@ -171,7 +175,7 @@ class Rand {
 	 * @return string Random string of given length consisting of only punctuation.
 	 */
 	public static function punct($length) {
-		return static::fromCharlist($length, static::CHARS_PUNCT);
+		return static::fromChars($length, static::CHARS_PUNCT);
 	}
 	
 	/**
@@ -183,7 +187,7 @@ class Rand {
 	 * 						punctuation, and whitespace.
 	 */
 	public static function salt($length) {
-		return static::fromCharlist($length, static::getChars(static::SALT));
+		return static::fromChars($length, static::getChars(static::SALT));
 	}
 	
 	/**
@@ -193,7 +197,7 @@ class Rand {
 	 * @return string Random string of given length consisting of letters and numbers.
 	 */
 	public static function alnum($length) {
-		return static::fromCharlist($length, static::getChars(static::ALNUM));
+		return static::fromChars($length, static::getChars(static::ALNUM));
 	}
 	
 	/**
@@ -203,17 +207,17 @@ class Rand {
 	 * @param string $charlist Characters to use in the generation of the string.
 	 * @return string Random string of given length using given characters.
 	 */
-	public static function fromCharlist($length, $charlist) {
+	public static function fromChars($length, $charlist) {
+		
 		$num = strlen($charlist);
-		$str = ''; 
+		$string = ''; 
 		$strlen = 0;
-		// a "for" loop is a bit faster but does not produce the 
-		// proper length string every time.
-		while ($strlen < $length) {
-			$str .= substr($charlist, mt_rand(0, $num), 1);
-			$strlen = strlen($str);
+		
+		while (strlen($string) < $length) {
+			$string .= $charlist[ mt_rand(0, $num) ];
 		}
-		return $str;
+		
+		return $string;
 	}
 	
 	/**
@@ -228,10 +232,12 @@ class Rand {
 	public static function getChars($val) {
 			
 		if (! is_numeric($val)) {
+			
 			if (null === $id = static::charsId($val)) {
-				trigger_error("Unknown character list ID '$val'.");
+				trigger_error("Unknown character list ID '$val'.", E_USER_NOTICE);
 				return null;
 			}
+		
 		} else {
 			$id = (int)$val;
 		}
@@ -250,7 +256,7 @@ class Rand {
 				case 13313: // distinct
 					return static::CHARS_DISTINCT;
 				default: // no idea
-					trigger_error("Unknown character list ID '$val'.");
+					trigger_error("Unknown character list ID '$val'.", E_USER_NOTICE);
 					return null;
 			}
 		}
@@ -281,6 +287,7 @@ class Rand {
 	
 	/**
 	 * Gets a character list ID by name.
+	 * 
 	 * Kind of like filter_id()
 	 * 
 	 * @param string $name Charlist name.
@@ -353,7 +360,7 @@ class Rand {
 		$buffer = '';
 		$bl = strlen($buffer);
 
-		if (file_exists('/dev/urandom') && is_readable('/dev/urandom')) {
+		if (is_readable('/dev/urandom')) {
 			$f = fopen('/dev/urandom', 'r');
 			while ( $bl < $length ) {
 				$buffer .= fread($f, $length - $bl);
